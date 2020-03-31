@@ -16,7 +16,7 @@ class ListTransaction extends StatelessWidget {
             (detalleSnap.data.length == null || detalleSnap.data.length == 0)) {
           return Container();
         } else {
-          return FadeIn(
+           return FadeIn(
             duration: Duration(milliseconds: 400),
             child: ListView.builder(
               itemCount: detalleSnap.data.length,

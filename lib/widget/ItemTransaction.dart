@@ -9,10 +9,42 @@ class ItemTransaction extends StatelessWidget implements ListItem {
   final ItemTransactionFooter footer;
 
   ItemTransaction(this.header, this.body, this.footer);
-  //ItemTransaction(this.header, this.body);
-  
 
   @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.all(0),
+      padding: EdgeInsets.only(left: 8, right: 10, bottom: 8, top: 0),
+      child: Card(
+        elevation: 7,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15.0),
+        ),
+        child: Container(
+          padding: EdgeInsets.all(15),
+          child: Column(
+            children: <Widget>[
+              header,
+              AbsorbPointer(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: body.length,
+                  itemBuilder: (context, index) {
+                    final item = body[index];
+                    return item;
+                  },
+                ),
+              ),
+              footer,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/* @override
   Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.all(10),
@@ -36,7 +68,7 @@ class ItemTransaction extends StatelessWidget implements ListItem {
       ),
     );
   }
-}
+}*/
 
 class ItemTransactionHeader extends StatelessWidget {
   final String header;
@@ -95,12 +127,14 @@ class ItemTransactionBody extends StatelessWidget implements ListItem {
                 Text(
                   this.descripcion,
                   style: Theme.of(context).textTheme.button.copyWith(
-                              color: Colors.black, fontWeight: FontWeight.w400),
+                      color: Colors.black, fontWeight: FontWeight.w400),
                 ),
                 Text(
                   this.categoria.descripcion,
-                  style: Theme.of(context).textTheme.body1.copyWith(
-                              color: Color(categoria.color)),
+                  style: Theme.of(context)
+                      .textTheme
+                      .body1
+                      .copyWith(color: Color(categoria.color)),
                 )
               ],
             ),
@@ -113,7 +147,9 @@ class ItemTransactionBody extends StatelessWidget implements ListItem {
                   Text(
                     'Gs. ' + UtilsFormat.formatNumber(this.monto),
                     style: Theme.of(context).textTheme.body1.copyWith(
-                              color: (tipoTransaccion == 'I' ? Colors.green : Colors.red)),
+                        color: (tipoTransaccion == 'I'
+                            ? Colors.green
+                            : Colors.red)),
                   ),
                 ],
               ))
@@ -122,7 +158,6 @@ class ItemTransactionBody extends StatelessWidget implements ListItem {
     );
   }
 }
-
 
 class ItemTransactionFooter extends StatelessWidget implements ListItem {
   String descripcion;
@@ -136,7 +171,6 @@ class ItemTransactionFooter extends StatelessWidget implements ListItem {
   @override
   Widget build(BuildContext context) {
     return Container(
-
       child: Column(
         children: <Widget>[
           Divider(),
@@ -146,7 +180,10 @@ class ItemTransactionFooter extends StatelessWidget implements ListItem {
                 flex: 1,
                 child: Text(
                   this.descripcion,
-                  style: Theme.of(context).textTheme.body1.copyWith(fontWeight: FontWeight.w700),
+                  style: Theme.of(context)
+                      .textTheme
+                      .body1
+                      .copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               Expanded(
@@ -157,7 +194,8 @@ class ItemTransactionFooter extends StatelessWidget implements ListItem {
                     Text(
                       'Gs. ' + UtilsFormat.formatNumber(this.monto),
                       style: Theme.of(context).textTheme.body1.copyWith(
-                                  color:  (this.saldo ? Colors.green : Colors.red) , fontWeight: FontWeight.w700),
+                          color: (this.saldo ? Colors.green : Colors.red),
+                          fontWeight: FontWeight.w700),
                     )
                   ],
                 ),

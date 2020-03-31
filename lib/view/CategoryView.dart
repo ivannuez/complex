@@ -76,7 +76,7 @@ class _CategoryViewState extends State<CategoryView>
               TabBar(
                 controller: _tabController,
                 indicator: UnderlineTabIndicator(
-                  insets: EdgeInsets.all(5),
+                  insets: EdgeInsets.all(0),
                 ),
                 indicatorWeight: 0,
                 indicatorSize: TabBarIndicatorSize.tab,
@@ -229,6 +229,7 @@ class _CategoryViewState extends State<CategoryView>
                           color: (indexTab == 0 ? Colors.green : Colors.red)),
                       Container(
                         height: MediaQuery.of(context).size.height / 2.8,
+                        padding: EdgeInsets.symmetric(horizontal: 15),
                         child: Form(
                           key: _formKey,
                           child: Column(

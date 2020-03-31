@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'package:complex/widget/PopapDate.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -9,7 +10,6 @@ import 'package:complex/widget/ItemTransaction.dart';
 import 'package:complex/model/model.dart';
 import 'package:complex/utils/UtilsFormat.dart';
 import 'package:complex/core/ICircularBottom.dart';
-import 'package:complex/core/MyAppbar.dart';
 import 'package:animate_do/animate_do.dart';
 
 class TransactionList extends StatefulWidget {
@@ -59,28 +59,39 @@ class _TransactionListState extends State<TransactionList> {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(15.0),
-          child: ICircularBottom(
-            height: 15,
-            radius: 20,
+          preferredSize: const Size.fromHeight(60.0),
+          child: Column(
+            children: <Widget>[
+              PopapDate(),
+              SizedBox(
+                height: 15,
+              ),
+              ICircularBottom(
+                height: 15,
+                radius: 20,
+              ),
+            ],
           ),
         ),
       ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          sumaryTransaction(),
-          Divider(),
-          listTransaction(),
-        ],
+      body: Container(
+        color: Colors.white,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            sumaryTransaction(),
+            Divider(),
+            listTransaction(),
+          ],
+        ),
       ),
     );
   }
 
   Widget listTransaction() {
-    return Container(
-      child: Flexible(child: this.list),
+    return Expanded(
+      child: this.list,
     );
   }
 
@@ -102,20 +113,22 @@ class _TransactionListState extends State<TransactionList> {
                     children: <Widget>[
                       Text(
                         'Saldo Actual:',
-                        style: Theme.of(context).textTheme.caption.copyWith(
+                        style: Theme.of(context).textTheme.subtitle.copyWith(
                             color: Colors.black, fontWeight: FontWeight.w400),
                       ),
                       Text(
                         'Gs. ' +
                             UtilsFormat.formatNumber(cuentaSnap.data.saldo),
-                        style: Theme.of(context).textTheme.title.copyWith(
+                        style: Theme.of(context).textTheme.headline.copyWith(
                             color: (cuentaSnap.data.saldo >= 0
                                 ? Colors.green
                                 : Colors.red)),
                       )
                     ],
                   ),
-                  SizedBox(height: 10,),
+                  SizedBox(
+                    height: 10,
+                  ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: <Widget>[
@@ -124,7 +137,7 @@ class _TransactionListState extends State<TransactionList> {
                         children: <Widget>[
                           Text(
                             'Ingreso del Mes:',
-                            style: Theme.of(context).textTheme.body1.copyWith(
+                            style: Theme.of(context).textTheme.body2.copyWith(
                                 color: Colors.black,
                                 fontWeight: FontWeight.w400),
                           ),
@@ -132,7 +145,7 @@ class _TransactionListState extends State<TransactionList> {
                             'Gs. ' + UtilsFormat.formatNumber(ingresosMes),
                             style: Theme.of(context)
                                 .textTheme
-                                .body1
+                                .subhead
                                 .copyWith(color: Colors.green),
                           )
                         ],
@@ -142,7 +155,7 @@ class _TransactionListState extends State<TransactionList> {
                         children: <Widget>[
                           Text(
                             'Egresos del Mes:',
-                            style: Theme.of(context).textTheme.body1.copyWith(
+                            style: Theme.of(context).textTheme.body2.copyWith(
                                 color: Colors.black,
                                 fontWeight: FontWeight.w400),
                           ),
@@ -150,7 +163,7 @@ class _TransactionListState extends State<TransactionList> {
                             'Gs. ' + UtilsFormat.formatNumber(egresosMes),
                             style: Theme.of(context)
                                 .textTheme
-                                .body1
+                                .subhead
                                 .copyWith(color: Colors.red),
                           )
                         ],
@@ -160,13 +173,13 @@ class _TransactionListState extends State<TransactionList> {
                         children: <Widget>[
                           Text(
                             'Balance del Mes:',
-                            style: Theme.of(context).textTheme.body1.copyWith(
+                            style: Theme.of(context).textTheme.body2.copyWith(
                                 color: Colors.black,
                                 fontWeight: FontWeight.w400),
                           ),
                           Text(
                             'Gs. ' + UtilsFormat.formatNumber(balanceMes),
-                            style: Theme.of(context).textTheme.body1.copyWith(
+                            style: Theme.of(context).textTheme.subhead.copyWith(
                                   color: (balanceMes >= 0
                                       ? Colors.green
                                       : Colors.red),
@@ -200,6 +213,7 @@ class _TransactionListState extends State<TransactionList> {
 
     List<ItemTransaction> listItem = new List<ItemTransaction>();
     Map map = new LinkedHashMap<String, ItemTransaction>();
+    //Map saldo = new LinkedHashMap<String, double>();
 
     try {
       for (var i = 0; i < detalleList.length; i++) {
@@ -238,6 +252,7 @@ class _TransactionListState extends State<TransactionList> {
 
           ItemTransaction item = new ItemTransaction(
               itemTransactionHeader, body, itemTransactionFooter);
+              
 
           map[fecha] = item;
         } else {
@@ -267,3 +282,5 @@ class _TransactionListState extends State<TransactionList> {
     return listItem;
   }
 }
+
+

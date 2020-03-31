@@ -75,6 +75,7 @@ class _PrincipalFormState extends State<PrincipalForm> {
                         child: Column(
                           children: <Widget>[
                             FormBuilderTextField(
+                              autofocus: true,
                               attribute: "Monto",
                               decoration: const InputDecoration(
                                 icon: Icon(
@@ -186,10 +187,10 @@ class _PrincipalFormState extends State<PrincipalForm> {
   void confirmBt() {
     final form = _fbKey.currentState;
     if (form.validate()) {
-      print(selectedCategory.idCategoria);
+      /*print(selectedCategory.idCategoria);
       print(monto.toString());
       print(fecha);
-      print(descripcion);
+      print(descripcion);*/
       var mainProvider = Provider.of<MainProvider>(context, listen: false);
       AwesomeDialog(
         context: context,

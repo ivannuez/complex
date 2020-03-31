@@ -1,3 +1,4 @@
+import 'package:complex/widget/PopapDate.dart';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_icons/flutter_icons.dart';
@@ -24,75 +25,6 @@ class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
   bool dialVisible = true;
 
-  getData() async {}
-
-  Widget _widgetOptions(int index) {
-    switch (index) {
-      case 0:
-        {
-          return FutureBuilder(
-            future: getData(),
-            builder: (context, main) {
-              if (main.connectionState != ConnectionState.done) {
-                return Center(
-                  child: Container(),
-                );
-              } else {
-                return SingleChildScrollView(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: <Widget>[
-                        header(),
-                        SizedBox(
-                          height: 20.0,
-                        ),
-                        gastosPorCategoria(),
-                        SizedBox(
-                          height: 20.0,
-                        ),
-                        frecuenciaDeGastos(),
-                        SizedBox(
-                          height: 20.0,
-                        ),
-                        metas(),
-                        SizedBox(
-                          height: 20.0,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-            },
-          );
-        }
-      case 1:
-        {
-          return TransactionList(
-            tipoForm: 'T',
-            textForm: 'Transacciones',
-          );
-        }
-      case 2:
-        {
-          return Statistics();
-        }
-      case 3:
-        {
-          return Settings();
-        }
-    }
-    return Container();
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-      dialVisible = (index == 0 ? true : false);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,7 +32,7 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Container(
         child: SafeArea(
           child: Container(
-            color: Colors.white,
+            color: Colors.grey[50],
             child: _widgetOptions(_selectedIndex),
           ),
         ),
@@ -134,6 +66,264 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
     );
+  }
+
+  Widget _widgetOptions(int index) {
+    switch (index) {
+      case 0:
+        {
+          return SingleChildScrollView(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: <Widget>[
+                  header(),
+                  gastosPorCategoria(),
+                  SizedBox(
+                    height: 20.0,
+                  ),
+                  frecuenciaDeGastos(),
+                  SizedBox(
+                    height: 20.0,
+                  ),
+                  metas(),
+                  SizedBox(
+                    height: 20.0,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      case 1:
+        {
+          return TransactionList(
+            tipoForm: 'T',
+            textForm: 'Transacciones',
+          );
+        }
+      case 2:
+        {
+          return Statistics();
+        }
+      case 3:
+        {
+          return Settings();
+        }
+    }
+    return Container();
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+      dialVisible = (index == 0 ? true : false);
+    });
+  }
+
+  Widget header() {
+    return FadeIn(
+      duration: Duration(milliseconds: 400),
+      child: Container(
+        height: 225,
+        width: double.infinity,
+        child: CustomPaint(
+          painter: CurvePainter(),
+          child: Container(
+            margin: EdgeInsets.all(5.0),
+            padding: EdgeInsets.all(15.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                PopapDate(),
+                SizedBox(
+                  height: 10,
+                ),
+                Row(
+                  children: <Widget>[
+                    Text(
+                      'Ingresos:',
+                      style: Theme.of(context).textTheme.title,
+                    ),
+                    Spacer(),
+                    Consumer<MainProvider>(
+                      builder: (_, snapshot, __) {
+                        return Text(
+                          "Gs. " +
+                              UtilsFormat.formatNumber(snapshot.ingresoTotal),
+                          style: Theme.of(context).textTheme.title.copyWith(
+                                fontWeight: FontWeight.normal,
+                              ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+                Row(
+                  children: <Widget>[
+                    Text(
+                      'Egresos:',
+                      style: Theme.of(context).textTheme.title,
+                    ),
+                    Spacer(),
+                    Consumer<MainProvider>(
+                      builder: (_, snapshot, __) {
+                        return Text(
+                          "Gs. " +
+                              UtilsFormat.formatNumber(snapshot.egresoTotal),
+                          style: Theme.of(context).textTheme.title.copyWith(
+                                fontWeight: FontWeight.normal,
+                              ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                Divider(
+                  color: Colors.white,
+                  indent: 300,
+                ),
+                Row(
+                  children: <Widget>[
+                    Text(
+                      'Saldo Actual:',
+                      style: Theme.of(context).textTheme.title,
+                    ),
+                    Spacer(),
+                    Consumer<MainProvider>(
+                      builder: (_, snapshot, __) {
+                        return Text(
+                          "Gs. " + UtilsFormat.formatNumber(snapshot.saldo),
+                          style: Theme.of(context).textTheme.title.copyWith(
+                                fontWeight: FontWeight.normal,
+                              ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget gastosPorCategoria() {
+    return FadeIn(
+      duration: Duration(milliseconds: 400),
+      child: Container(
+        width: double.infinity,
+        height: 240.0,
+        padding:
+            EdgeInsets.only(top: 10.0, left: 10.0, right: 10.0, bottom: 0.0),
+        child: Material(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+          elevation: 5.0,
+          color: Colors.white,
+          child: Container(
+            margin: EdgeInsets.only(top: 15.0, left: 15.0, right: 15.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  "Gastos por Categoria",
+                  style: Theme.of(context).textTheme.subtitle,
+                ),
+                Divider(),
+                Container(
+                  height: 170,
+                  width: double.infinity,
+                  padding: EdgeInsets.only(left: 10, right: 10),
+                  child: DatumLegendWithMeasures.withSampleData(),
+                )
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget frecuenciaDeGastos() {
+    return FadeIn(
+      duration: Duration(milliseconds: 400),
+      child: Container(
+        width: double.infinity,
+        height: 240.0,
+        padding:
+            EdgeInsets.only(top: 10.0, left: 10.0, right: 10.0, bottom: 0.0),
+        child: Material(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+          elevation: 5.0,
+          color: Colors.white,
+          child: Container(
+            margin: EdgeInsets.all(15.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  "Frecuencia de Gastos",
+                  style: Theme.of(context).textTheme.subtitle,
+                ),
+                Divider(),
+                Container(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget metas() {
+    return FadeIn(
+      duration: Duration(milliseconds: 400),
+      child: Container(
+        width: double.infinity,
+        height: 240.0,
+        padding:
+            EdgeInsets.only(top: 10.0, left: 10.0, right: 10.0, bottom: 0.0),
+        child: Material(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+          elevation: 5.0,
+          color: Colors.white,
+          child: Container(
+            margin: EdgeInsets.all(15.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  "Metas",
+                  style: Theme.of(context).textTheme.subtitle,
+                ),
+                Divider(),
+                Container(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _appBarColor(int index) {
+    if (index == 0) {
+      return Colors.blue;
+    } else {
+      return Colors.blue;
+    }
   }
 
   void setDialVisible(bool value) {
@@ -192,38 +382,63 @@ class _MyHomePageState extends State<MyHomePage> {
       ],
     );
   }
+}
 
+class CurvePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    Path path = Path();
+    Paint paint = Paint();
+
+    paint.color = Colors.blue;
+    paint.style = PaintingStyle.fill; // stroke
+    paint.strokeWidth = 5;
+
+    path.lineTo(0, size.height * 0.8);
+    path.quadraticBezierTo(
+        size.width * 0.25, size.height, size.width * 0.50, size.height * 0.8);
+    path.quadraticBezierTo(
+        size.width * 0.75, size.height * 0.60, size.width, size.height * 0.9);
+    path.lineTo(size.width, 0);
+
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return oldDelegate != this;
+  }
+}
+
+//Para Irp
+/*
   Widget header() {
     return FadeIn(
       duration: Duration(milliseconds: 400),
       child: Container(
+        height: 200,
         width: double.infinity,
-        height: 235.0,
-        padding:
-            EdgeInsets.only(top: 10.0, left: 10.0, right: 10.0, bottom: 0.0),
-        child: Material(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10.0),
-          ),
-          elevation: 5.0,
-          color: Colors.white,
+        child: CustomPaint(
+          painter: CurvePainter(),
           child: Container(
             margin: EdgeInsets.all(5.0),
-            padding: EdgeInsets.only(top: 30.0),
+            padding: EdgeInsets.only(top: 20.0),
             child: Center(
               child: Column(
                 children: <Widget>[
                   Text(
                     "Diciembre ",
                     textScaleFactor: 1.5,
-                    style: TextStyle(fontWeight: FontWeight.w400),
+                    style: TextStyle(fontWeight: FontWeight.w400, color: Colors.black),
                   ),
                   SizedBox(
                     height: 10.0,
                   ),
                   Text(
                     "Saldo actual:",
-                    style: TextStyle(fontWeight: FontWeight.w300),
+                    style: TextStyle(fontWeight: FontWeight.w300, color: Colors.black),
                   ),
                   SizedBox(
                     height: 10.0,
@@ -233,6 +448,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       return Text(
                         "Gs. " + UtilsFormat.formatNumber(snapshot.saldo),
                         textScaleFactor: 1.9,
+                        style: TextStyle(color: Colors.black),
                       );
                     },
                   ),
@@ -385,118 +601,4 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
     );
-  }
-
-  Widget gastosPorCategoria() {
-    return FadeIn(
-      duration: Duration(milliseconds: 400),
-      child: Container(
-        width: double.infinity,
-        height: 235.0,
-        padding:
-            EdgeInsets.only(top: 10.0, left: 10.0, right: 10.0, bottom: 0.0),
-        child: Material(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10.0),
-          ),
-          elevation: 5.0,
-          color: Colors.white,
-          child: Container(
-            margin: EdgeInsets.only(top: 15.0, left: 15.0, right: 15.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  "Gastos por Categoria",
-                  style: Theme.of(context).textTheme.subtitle,
-                ),
-                Divider(),
-                Container(
-                  height: 170,
-                  width: double.infinity,
-                  padding: EdgeInsets.only(left: 10, right: 10),
-                  child: DatumLegendWithMeasures.withSampleData(),
-                )
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget frecuenciaDeGastos() {
-    return FadeIn(
-      duration: Duration(milliseconds: 400),
-      child: Container(
-        width: double.infinity,
-        height: 235.0,
-        padding:
-            EdgeInsets.only(top: 10.0, left: 10.0, right: 10.0, bottom: 0.0),
-        child: Material(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-          elevation: 5.0,
-          color: Colors.white,
-          child: Container(
-            margin: EdgeInsets.all(15.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  "Frecuencia de Gastos",
-                  style: Theme.of(context).textTheme.subtitle,
-                ),
-                Divider(),
-                Container(),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget metas() {
-    return FadeIn(
-      duration: Duration(milliseconds: 400),
-      child: Container(
-        width: double.infinity,
-        height: 235.0,
-        padding:
-            EdgeInsets.only(top: 10.0, left: 10.0, right: 10.0, bottom: 0.0),
-        child: Material(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-          elevation: 5.0,
-          color: Colors.white,
-          child: Container(
-            margin: EdgeInsets.all(15.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  "Metas",
-                  style: Theme.of(context).textTheme.subtitle,
-                ),
-                Divider(),
-                Container(),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Color _appBarColor(int index) {
-    if (index == 0) {
-      return Colors.white;
-    } else {
-      return Colors.blue;
-    }
-  }
-}
+  }*/
