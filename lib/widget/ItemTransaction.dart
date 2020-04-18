@@ -25,17 +25,16 @@ class ItemTransaction extends StatelessWidget implements ListItem {
           child: Column(
             children: <Widget>[
               header,
-              AbsorbPointer(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: body.length,
-                  itemBuilder: (context, index) {
-                    final item = body[index];
-                    return item;
-                  },
-                ),
+              ListView.builder(
+                physics: NeverScrollableScrollPhysics(),
+                shrinkWrap: true,
+                itemCount: body.length,
+                itemBuilder: (context, index) {
+                  final item = body[index];
+                  return item;
+                },
               ),
-              footer,
+              //footer,
             ],
           ),
         ),
@@ -91,69 +90,74 @@ class ItemTransactionHeader extends StatelessWidget {
 }
 
 class ItemTransactionBody extends StatelessWidget implements ListItem {
+  final int idTransacction;
   final String descripcion;
   final Categoria categoria;
   final double monto;
   final IconData icono;
   final String tipoTransaccion;
+  final VoidCallback onPress;
 
-  ItemTransactionBody(this.descripcion, this.categoria, this.monto, this.icono,
-      this.tipoTransaccion);
+  ItemTransactionBody(this.idTransacction, this.descripcion, this.categoria,
+      this.monto, this.icono, this.tipoTransaccion, this.onPress);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            flex: 1,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Icon(
-                  icono,
-                  color: (tipoTransaccion == 'I' ? Colors.green : Colors.red),
-                  size: 20.0,
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 5,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  this.descripcion,
-                  style: Theme.of(context).textTheme.button.copyWith(
-                      color: Colors.black, fontWeight: FontWeight.w400),
-                ),
-                Text(
-                  this.categoria.descripcion,
-                  style: Theme.of(context)
-                      .textTheme
-                      .body1
-                      .copyWith(color: Color(categoria.color)),
-                )
-              ],
-            ),
-          ),
-          Expanded(
-              flex: 4,
+    return InkWell(
+      onTap: onPress,
+      child: Container(
+        margin: EdgeInsets.symmetric(vertical: 5),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              flex: 1,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    'Gs. ' + UtilsFormat.formatNumber(this.monto),
-                    style: Theme.of(context).textTheme.body1.copyWith(
-                        color: (tipoTransaccion == 'I'
-                            ? Colors.green
-                            : Colors.red)),
+                  Icon(
+                    icono,
+                    color: (tipoTransaccion == 'I' ? Colors.green : Colors.red),
+                    size: 20.0,
                   ),
                 ],
-              ))
-        ],
+              ),
+            ),
+            Expanded(
+              flex: 5,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    this.descripcion,
+                    style: Theme.of(context).textTheme.button.copyWith(
+                        color: Colors.black, fontWeight: FontWeight.w400),
+                  ),
+                  Text(
+                    this.categoria.descripcion,
+                    style: Theme.of(context)
+                        .textTheme
+                        .body1
+                        .copyWith(color: Color(categoria.color)),
+                  )
+                ],
+              ),
+            ),
+            Expanded(
+                flex: 4,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: <Widget>[
+                    Text(
+                      'Gs. ' + UtilsFormat.formatNumber(this.monto),
+                      style: Theme.of(context).textTheme.body1.copyWith(
+                          color: (tipoTransaccion == 'I'
+                              ? Colors.green
+                              : Colors.red)),
+                    ),
+                  ],
+                ))
+          ],
+        ),
       ),
     );
   }

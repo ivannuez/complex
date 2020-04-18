@@ -19,6 +19,9 @@ la herencia múltiple.
   int _ingresoTotal = 0;
   int _egresoTotal = 0;
   int _saldo = 0;
+  
+  String _mesActualHome;
+  String _mesActualTransaction;
 
   String get usuario => _usuario;
   set usuario(String value) {
@@ -62,6 +65,18 @@ la herencia múltiple.
     notifyListeners(); //notificamos a los widgets que esten escuchando el stream.
   }
 
+  String get mesActualHome => _mesActualHome;
+  set mesActualHome(String value) {
+    _mesActualHome = value;
+    notifyListeners(); //notificamos a los widgets que esten escuchando el stream.
+  }
+
+  String get mesActualTransaction => _mesActualTransaction;
+  set mesActualTransaction(String value) {
+    _mesActualTransaction = value;
+    notifyListeners(); //notificamos a los widgets que esten escuchando el stream.
+  }
+
 
   void initialState(String usuario, int usuarioId, int cuentaId,
       int ingresoTotal, int egresoTotal, int saldo) {
@@ -71,7 +86,7 @@ la herencia múltiple.
     _ingresoTotal = ingresoTotal;
     _egresoTotal = egresoTotal;
     _saldo = saldo;
-    //notifyListeners();
+    notifyListeners();
   }
 
   void updateIngreso(int ingresoTotal, int saldo) {

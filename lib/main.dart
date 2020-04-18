@@ -1,12 +1,13 @@
-import "dart:async";
 import 'package:flutter/material.dart';
+import "dart:async";
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:complex/providers/provider.dart';
-import 'package:complex/view/MyHomePage.dart';
-import 'package:complex/view/PrincipalForm.dart';
-import 'package:complex/view/TransactionList.dart';
-import 'package:complex/view/Settings.dart';
-import 'package:complex/view/CategoryView.dart';
+import 'package:complex/pages/MyHomePage.dart';
+import 'package:complex/pages/PrincipalForm.dart';
+import 'package:complex/pages/TransactionList.dart';
+import 'package:complex/pages/Settings.dart';
+import 'package:complex/pages/CategoryView.dart';
 import 'package:splashscreen/splashscreen.dart';
 import 'package:complex/model/model.dart';
 import 'package:complex/core/ThemeData.dart';
@@ -17,7 +18,6 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    
         return ChangeNotifierProvider(
           create: (context) => MainProvider(),
           child: MaterialApp(
@@ -57,6 +57,9 @@ class _ScreenSplashState extends State<ScreenSplash> {
   getDataInit() async {
     try {
       var mainProvider = Provider.of<MainProvider>(context, listen: false);
+      mainProvider.mesActualHome = (new DateFormat("yyyy-MM").format(new DateTime.now()));
+      mainProvider.mesActualTransaction = (new DateFormat("yyyy-MM").format(new DateTime.now()));
+
       final usuarios = await Usuario().select().toList();
       if (usuarios.length <= 0) {
         final usuario = await Usuario.withFields("Default", false).save();

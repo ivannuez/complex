@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'package:complex/pages/PrincipalForm.dart';
 import 'package:complex/widget/PopapDate.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -23,20 +24,9 @@ class TransactionList extends StatefulWidget {
 }
 
 class _TransactionListState extends State<TransactionList> {
-  ListTransaction list;
-  double egresosMes = 0;
-  double ingresosMes = 0;
-  double balanceMes = 0;
-  double saldoActual = 0;
-
   void initState() {
     super.initState();
     initializeDateFormatting('es', null);
-    list = ListTransaction(list: getDetalleCuenta());
-  }
-
-  Future<Cuenta> getCuenta() async {
-    return await Cuenta().select().idCuenta.equals(1).toSingle();
   }
 
   @override
@@ -81,7 +71,6 @@ class _TransactionListState extends State<TransactionList> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             sumaryTransaction(),
-            Divider(),
             listTransaction(),
           ],
         ),
@@ -89,17 +78,11 @@ class _TransactionListState extends State<TransactionList> {
     );
   }
 
-  Widget listTransaction() {
-    return Expanded(
-      child: this.list,
-    );
-  }
-
   Widget sumaryTransaction() {
     return FutureBuilder(
-      future: getCuenta(),
-      builder: (context, cuentaSnap) {
-        if (cuentaSnap.connectionState != ConnectionState.done) {
+      future: balanceMes(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
           return Container();
         } else {
           return FadeIn(
@@ -108,7 +91,7 @@ class _TransactionListState extends State<TransactionList> {
               padding: EdgeInsets.only(bottom: 0, left: 10, right: 10, top: 0),
               child: Column(
                 children: <Widget>[
-                  Column(
+                  /*Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: <Widget>[
                       Text(
@@ -116,19 +99,25 @@ class _TransactionListState extends State<TransactionList> {
                         style: Theme.of(context).textTheme.subtitle.copyWith(
                             color: Colors.black, fontWeight: FontWeight.w400),
                       ),
-                      Text(
-                        'Gs. ' +
-                            UtilsFormat.formatNumber(cuentaSnap.data.saldo),
-                        style: Theme.of(context).textTheme.headline.copyWith(
-                            color: (cuentaSnap.data.saldo >= 0
-                                ? Colors.green
-                                : Colors.red)),
-                      )
+                      Consumer<MainProvider>(
+                        builder: (_, snapshot, __) {
+                          return Text(
+                            'Gs. ' + UtilsFormat.formatNumber(snapshot.saldo),
+                            style: Theme.of(context)
+                                .textTheme
+                                .headline
+                                .copyWith(
+                                    color: (snapshot.saldo >= 0
+                                        ? Colors.green
+                                        : Colors.red)),
+                          );
+                        },
+                      ),
                     ],
                   ),
                   SizedBox(
                     height: 10,
-                  ),
+                  ),*/
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: <Widget>[
@@ -142,7 +131,9 @@ class _TransactionListState extends State<TransactionList> {
                                 fontWeight: FontWeight.w400),
                           ),
                           Text(
-                            'Gs. ' + UtilsFormat.formatNumber(ingresosMes),
+                            'Gs. ' +
+                                UtilsFormat.formatNumber(
+                                    snapshot.data["ingresos"]),
                             style: Theme.of(context)
                                 .textTheme
                                 .subhead
@@ -160,7 +151,9 @@ class _TransactionListState extends State<TransactionList> {
                                 fontWeight: FontWeight.w400),
                           ),
                           Text(
-                            'Gs. ' + UtilsFormat.formatNumber(egresosMes),
+                            'Gs. ' +
+                                UtilsFormat.formatNumber(
+                                    snapshot.data["egresos"]),
                             style: Theme.of(context)
                                 .textTheme
                                 .subhead
@@ -178,9 +171,11 @@ class _TransactionListState extends State<TransactionList> {
                                 fontWeight: FontWeight.w400),
                           ),
                           Text(
-                            'Gs. ' + UtilsFormat.formatNumber(balanceMes),
+                            'Gs. ' +
+                                UtilsFormat.formatNumber(
+                                    snapshot.data["balance"]),
                             style: Theme.of(context).textTheme.subhead.copyWith(
-                                  color: (balanceMes >= 0
+                                  color: (snapshot.data["balance"] >= 0
                                       ? Colors.green
                                       : Colors.red),
                                 ),
@@ -189,6 +184,7 @@ class _TransactionListState extends State<TransactionList> {
                       ),
                     ],
                   ),
+                  Divider(),
                 ],
               ),
             ),
@@ -198,34 +194,61 @@ class _TransactionListState extends State<TransactionList> {
     );
   }
 
+  Widget listTransaction() {
+    return Expanded(
+      child: ListTransaction(list: getDetalleCuenta()),
+    );
+  }
+
+  Future<Map<String, int>> balanceMes() async {
+    var mainProvider = Provider.of<MainProvider>(context);
+    Map<String, dynamic> data = new Map<String, int>();
+    int ingresos = 0;
+    int egresos = 0;
+    int balance = 0;
+    List<DetallesCuenta> detalleList = await DetallesCuenta()
+        .select()
+        .cuentasIdCuenta
+        .equals(mainProvider.cuentaId)
+        .and
+        .fecha
+        .startsWith(mainProvider.mesActualTransaction)
+        .orderByDesc("fecha")
+        .toList();
+
+    for (DetallesCuenta detalle in detalleList) {
+      if (detalle.tipoTransaccion == 'I') {
+        ingresos = ingresos + detalle.monto.toInt();
+      }
+      if (detalle.tipoTransaccion == 'E') {
+        egresos = egresos + detalle.monto.toInt();
+      }
+    }
+    balance = ingresos - egresos;
+    data["ingresos"] = ingresos;
+    data["egresos"] = egresos;
+    data["balance"] = balance;
+    return data;
+  }
+
   Future<List<ItemTransaction>> getDetalleCuenta() async {
-    var mainProvider = Provider.of<MainProvider>(context, listen: false);
+    var mainProvider = Provider.of<MainProvider>(context);
     List<DetallesCuenta> detalleList = await DetallesCuenta()
         .select()
         .cuentasIdCuenta
         .equals((mainProvider.cuentaId == null ? 1 : mainProvider.cuentaId))
-        //.and
-        //.fecha
-        //.startsWith(new DateFormat('y-MM').format(new DateTime.now()))
-        .orderByDesc("idDetalleCuenta")
+        .and
+        .fecha
+        .startsWith(mainProvider.mesActualTransaction)
         .orderByDesc("fecha")
         .toList();
 
     List<ItemTransaction> listItem = new List<ItemTransaction>();
     Map map = new LinkedHashMap<String, ItemTransaction>();
-    //Map saldo = new LinkedHashMap<String, double>();
 
     try {
       for (var i = 0; i < detalleList.length; i++) {
         DetallesCuenta detalle = detalleList[i];
-
-        if (detalle.tipoTransaccion == 'I') {
-          ingresosMes = ingresosMes + detalle.monto;
-        }
-        if (detalle.tipoTransaccion == 'E') {
-          egresosMes = egresosMes + detalle.monto;
-        }
-
         String fecha = detalle.fecha;
 
         if (!map.containsKey(fecha)) {
@@ -235,35 +258,49 @@ class _TransactionListState extends State<TransactionList> {
 
           List<ItemTransactionBody> body = new List<ItemTransactionBody>();
           ItemTransactionBody itemBody = new ItemTransactionBody(
-              detalle.descripcion,
-              await detalle.getCategoria(),
-              detalle.monto,
-              (detalle.tipoTransaccion == 'I'
-                  ? Icons.arrow_upward
-                  : Icons.arrow_downward),
-              detalle.tipoTransaccion);
+            detalle.idDetalleCuenta,
+            detalle.descripcion,
+            await detalle.getCategoria(),
+            detalle.monto,
+            (detalle.tipoTransaccion == 'I'
+                ? Icons.arrow_upward
+                : Icons.arrow_downward),
+            detalle.tipoTransaccion,
+            () {
+              detalle.tipoTransaccion == 'E'
+                  ? goForm('E', 'Gasto', detalle)
+                  : goForm('I', 'Ingreso', detalle);
+            },
+          );
           body.add(itemBody);
 
           ItemTransactionFooter itemTransactionFooter =
               new ItemTransactionFooter(
-                  "Saldo al final del día",
-                  detalle.saldoEnFecha,
-                  (detalle.saldoEnFecha > 0 ? true : false));
+            "Saldo al final del día",
+            1000000,
+            (1000000 > 0 ? true : false),
+          );
 
           ItemTransaction item = new ItemTransaction(
               itemTransactionHeader, body, itemTransactionFooter);
-              
 
           map[fecha] = item;
         } else {
           ItemTransactionBody itemBody = new ItemTransactionBody(
-              detalle.descripcion,
-              await detalle.getCategoria(),
-              detalle.monto,
-              (detalle.tipoTransaccion == 'I'
-                  ? Icons.arrow_upward
-                  : Icons.arrow_downward),
-              detalle.tipoTransaccion);
+            detalle.idDetalleCuenta,
+            detalle.descripcion,
+            await detalle.getCategoria(),
+            detalle.monto,
+            (detalle.tipoTransaccion == 'I'
+                ? Icons.arrow_upward
+                : Icons.arrow_downward),
+            detalle.tipoTransaccion,
+            () {
+              detalle.tipoTransaccion == 'E'
+                  ? goForm('E', 'Gasto', detalle)
+                  : goForm('I', 'Ingreso', detalle);
+            },
+          );
           ItemTransaction item = map[fecha];
           item.body.add(itemBody);
         }
@@ -273,14 +310,25 @@ class _TransactionListState extends State<TransactionList> {
       map.forEach((k, value) {
         listItem.add(value);
       });
-
-      balanceMes = ingresosMes - egresosMes;
-      setState(() {});
     } catch (e) {
       print(e);
     }
     return listItem;
   }
+
+  void goForm(String type, String title, DetallesCuenta detalle) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PrincipalForm(
+          tipoForm: type,
+          textForm: title,
+          editing: true,
+        ),
+        settings: RouteSettings(
+          arguments: detalle,
+        ),
+      ),
+    );
+  }
 }
-
-

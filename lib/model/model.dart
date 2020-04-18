@@ -110,7 +110,6 @@ const detallesCuenta = SqfEntityTable(
     SqfEntityField('descripcion', DbType.text),
     SqfEntityField('fecha', DbType.text),
     SqfEntityField('monto', DbType.real, defaultValue: 0),
-    SqfEntityField('saldoEnFecha', DbType.real, defaultValue: 0),
     SqfEntityField('tipoTransaccion', DbType.text),
     SqfEntityFieldRelationship(
         parentTable: cuentas,

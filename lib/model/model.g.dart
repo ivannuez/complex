@@ -84,7 +84,9 @@ class TableCuenta extends SqfEntityTableBase {
       SqfEntityFieldBase('totalEgreso', DbType.real, defaultValue: 0),
       SqfEntityFieldRelationshipBase(
           TableUsuario.getInstance, DeleteRule.SET_NULL,
-          defaultValue: 0, fieldName: 'usuariosIdUsuario'),
+          defaultValue: 0,
+          fieldName: 'usuariosIdUsuario',
+          relationType: RelationType.ONE_TO_MANY),
     ];
     super.init();
   }
@@ -99,6 +101,7 @@ class TableDetallesCuenta extends SqfEntityTableBase {
   TableDetallesCuenta() {
     // declare properties of EntityTable
     tableName = 'detallesCuenta';
+    relationType = RelationType.ONE_TO_MANY;
     primaryKeyName = 'idDetalleCuenta';
     primaryKeyType = PrimaryKeyType.integer_auto_incremental;
     useSoftDeleting = true;
@@ -109,14 +112,17 @@ class TableDetallesCuenta extends SqfEntityTableBase {
       SqfEntityFieldBase('descripcion', DbType.text),
       SqfEntityFieldBase('fecha', DbType.text),
       SqfEntityFieldBase('monto', DbType.real, defaultValue: 0),
-      SqfEntityFieldBase('saldoEnFecha', DbType.real, defaultValue: 0),
       SqfEntityFieldBase('tipoTransaccion', DbType.text),
       SqfEntityFieldRelationshipBase(
           TableCuenta.getInstance, DeleteRule.CASCADE,
-          defaultValue: 0, fieldName: 'cuentasIdCuenta'),
+          defaultValue: 0,
+          fieldName: 'cuentasIdCuenta',
+          relationType: RelationType.ONE_TO_MANY),
       SqfEntityFieldRelationshipBase(
           TableCategoria.getInstance, DeleteRule.SET_NULL,
-          defaultValue: 0, fieldName: 'categoriasIdCategoria'),
+          defaultValue: 0,
+          fieldName: 'categoriasIdCategoria',
+          relationType: RelationType.ONE_TO_MANY),
     ];
     super.init();
   }
@@ -159,6 +165,7 @@ class TableDetallesMeta extends SqfEntityTableBase {
   TableDetallesMeta() {
     // declare properties of EntityTable
     tableName = 'detallesMetas';
+    relationType = RelationType.ONE_TO_MANY;
     primaryKeyName = 'idDetalleMeta';
     primaryKeyType = PrimaryKeyType.integer_auto_incremental;
     useSoftDeleting = true;
@@ -169,7 +176,9 @@ class TableDetallesMeta extends SqfEntityTableBase {
       SqfEntityFieldBase('fecha', DbType.text),
       SqfEntityFieldBase('monto', DbType.real, defaultValue: 0),
       SqfEntityFieldRelationshipBase(TableMeta.getInstance, DeleteRule.CASCADE,
-          defaultValue: 0, fieldName: 'metasIdMeta'),
+          defaultValue: 0,
+          fieldName: 'metasIdMeta',
+          relationType: RelationType.ONE_TO_MANY),
     ];
     super.init();
   }
@@ -213,12 +222,12 @@ class Usuario {
   Usuario.withFields(this.nombre, this.isDeleted) {
     _setDefaultValues();
   }
-  Usuario.withId(this.idUsuario, this.nombre, this.isDeleted) {
+  Usuario.withId(idUsuario, this.nombre, this.isDeleted) {
     _setDefaultValues();
   }
   Usuario.fromMap(Map<String, dynamic> o) {
     _setDefaultValues();
-    idUsuario = o['idUsuario'] as int;
+    idUsuario = int.tryParse(o['idUsuario'].toString());
     if (o['nombre'] != null) nombre = o['nombre'] as String;
     isDeleted = o['isDeleted'] != null
         ? o['isDeleted'] == 1 || o['isDeleted'] == true
@@ -233,7 +242,8 @@ class Usuario {
   // end FIELDS (Usuario)
 
 // COLLECTIONS & VIRTUALS (Usuario)
-  /// to load children of items to this field, use preload parameter ex: toList(preload:true) or toSingle(preload:true)
+  /// to load children of items to this field, use preload parameter. Ex: toList(preload:true) or toSingle(preload:true) or getById(preload:true)
+  /// You can also specify this object into certain preload fields. Ex: toList(preload:true, preloadFields:['plCuentas', 'plField2'..]) or so on..
   List<Cuenta> plCuentas;
 
   /// get Cuenta(s) filtered by usuariosIdUsuario=idUsuario
@@ -245,6 +255,7 @@ class Usuario {
         .equals(idUsuario)
         .and;
   }
+
 // END COLLECTIONS & VIRTUALS (Usuario)
 
   static const bool _softDeleteActivated = true;
@@ -255,7 +266,8 @@ class Usuario {
   }
 
   // METHODS
-  Map<String, dynamic> toMap({bool forQuery = false, bool forJson = false}) {
+  Map<String, dynamic> toMap(
+      {bool forQuery = false, bool forJson = false, bool forView = false}) {
     final map = <String, dynamic>{};
     if (idUsuario != null) {
       map['idUsuario'] = idUsuario;
@@ -272,7 +284,9 @@ class Usuario {
   }
 
   Future<Map<String, dynamic>> toMapWithChilds(
-      [bool forQuery = false, bool forJson = false]) async {
+      [bool forQuery = false,
+      bool forJson = false,
+      bool forView = false]) async {
     final map = <String, dynamic>{};
     if (idUsuario != null) {
       map['idUsuario'] = idUsuario;
@@ -294,17 +308,21 @@ class Usuario {
     return map;
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   String toJson() {
     return json.encode(toMap(forJson: true));
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   Future<String> toJsonWithChilds() async {
     return json.encode(await toMapWithChilds(false, true));
   }
 
   List<dynamic> toArgs() {
+    return [nombre, isDeleted];
+  }
+
+  List<dynamic> toArgsWithIds() {
     return [idUsuario, nombre, isDeleted];
   }
 
@@ -341,17 +359,28 @@ class Usuario {
     */
 
   static Future<List<Usuario>> fromMapList(List<dynamic> data,
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     final List<Usuario> objList = <Usuario>[];
     for (final map in data) {
       final obj = Usuario.fromMap(map as Map<String, dynamic>);
 
-      // RELATIONSHIPS PRELOAD
+      // RELATIONSHIPS PRELOAD CHILD
       if (preload) {
-        if (preloadFields == null || preloadFields.contains('plCuentas')) {
-          obj.plCuentas = obj.plCuentas ?? await obj.getCuentas().toList();
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('usuarios.plCuentas') &&
+            (preloadFields == null || preloadFields.contains('plCuentas'))) {
+          loadedFields.add('usuarios.plCuentas');
+          obj.plCuentas = obj.plCuentas ??
+              await obj.getCuentas().toList(
+                  preload: preload,
+                  preloadFields: preloadFields,
+                  loadParents: false,
+                  loadedFields: loadedFields);
         }
-      } // END RELATIONSHIPS PRELOAD
+      } // END RELATIONSHIPS PRELOAD CHILD
 
       objList.add(obj);
     }
@@ -359,16 +388,49 @@ class Usuario {
   }
 
   /// returns Usuario by ID if exist, otherwise returns null
-  /// <param name='idUsuario'>Primary Key Value</param>
+  ///
+  /// Primary Keys: int idUsuario
+  ///
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
+  ///
+  /// ex: getById(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: getById(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
+  ///
   /// <returns>returns Usuario if exist, otherwise returns null
-  Future<Usuario> getById(int idusuario) async {
-    if (idusuario == null) {
+  Future<Usuario> getById(int idUsuario,
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
+    if (idUsuario == null) {
       return null;
     }
     Usuario obj;
-    final data = await _mnUsuario.getById(idusuario);
+    final data = await _mnUsuario.getById([idUsuario]);
     if (data.length != 0) {
       obj = Usuario.fromMap(data[0] as Map<String, dynamic>);
+
+      // RELATIONSHIPS PRELOAD CHILD
+      if (preload) {
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('usuarios.plCuentas') &&
+            (preloadFields == null || preloadFields.contains('plCuentas'))) {
+          loadedFields.add('usuarios.plCuentas');
+          obj.plCuentas = obj.plCuentas ??
+              await obj.getCuentas().toList(
+                  preload: preload,
+                  preloadFields: preloadFields,
+                  loadParents: false,
+                  loadedFields: loadedFields);
+        }
+      } // END RELATIONSHIPS PRELOAD CHILD
+
     } else {
       obj = null;
     }
@@ -382,7 +444,8 @@ class Usuario {
     if (idUsuario == null || idUsuario == 0) {
       idUsuario = await _mnUsuario.insert(this);
     } else {
-      idUsuario = await _upsert();
+      // idUsuario= await _upsert(); // removed in sqfentity_gen 1.3.0+6
+      await _mnUsuario.update(this);
     }
 
     return idUsuario;
@@ -400,25 +463,29 @@ class Usuario {
   /// saveAll method saves the sent List<Usuario> as a bulk in one transaction
   ///
   /// Returns a <List<BoolResult>>
-  Future<List<BoolResult>> saveAll(List<Usuario> usuarios) async {
-    final results = _mnUsuario.saveAll(
-        'INSERT OR REPLACE INTO usuarios (idUsuario,  nombre,isDeleted)  VALUES (?,?,?)',
-        usuarios);
-    return results;
+  Future<List<dynamic>> saveAll(List<Usuario> usuarios) async {
+    // final results = _mnUsuario.saveAll('INSERT OR REPLACE INTO usuarios (idUsuario,nombre,isDeleted)  VALUES (?,?,?)',usuarios);
+    // return results; removed in sqfentity_gen 1.3.0+6
+    DbComplex().batchStart();
+    for (final obj in usuarios) {
+      await obj.save();
+    }
+    return DbComplex().batchCommit();
   }
 
   /// Updates if the record exists, otherwise adds a new row
 
   /// <returns>Returns idUsuario
-  Future<int> _upsert() async {
+  Future<int> upsert() async {
     try {
       if (await _mnUsuario.rawInsert(
-              'INSERT OR REPLACE INTO usuarios (idUsuario,  nombre,isDeleted)  VALUES (?,?,?)',
+              'INSERT OR REPLACE INTO usuarios (idUsuario,nombre,isDeleted)  VALUES (?,?,?)',
               [idUsuario, nombre, isDeleted]) ==
           1) {
         saveResult = BoolResult(
             success: true,
-            successMessage: 'Usuario idUsuario=$idUsuario updated successfuly');
+            successMessage:
+                'Usuario idUsuario=$idUsuario updated successfully');
       } else {
         saveResult = BoolResult(
             success: false,
@@ -437,10 +504,10 @@ class Usuario {
   ///
   /// upsertAll() method is faster then saveAll() method. upsertAll() should be used when you are sure that the primary key is greater than zero
   ///
-  /// Returns a <List<BoolResult>>
-  Future<List<BoolResult>> upsertAll(List<Usuario> usuarios) async {
+  /// Returns a BoolCommitResult
+  Future<BoolCommitResult> upsertAll(List<Usuario> usuarios) async {
     final results = await _mnUsuario.rawInsertAll(
-        'INSERT OR REPLACE INTO usuarios (idUsuario,  nombre,isDeleted)  VALUES (?,?,?)',
+        'INSERT OR REPLACE INTO usuarios (idUsuario,nombre,isDeleted)  VALUES (?,?,?)',
         usuarios);
     return results;
   }
@@ -774,11 +841,11 @@ class UsuarioFilterBuilder extends SearchCriteria {
   }
 
   /// String whereCriteria, write raw query without 'where' keyword. Like this: 'field1 like 'test%' and field2 = 3'
-  UsuarioFilterBuilder where(String whereCriteria) {
+  UsuarioFilterBuilder where(String whereCriteria, {dynamic parameterValue}) {
     if (whereCriteria != null && whereCriteria != '') {
       final DbParameter param = DbParameter();
-      _addedBlocks =
-          setCriteria(0, parameters, param, '($whereCriteria)', _addedBlocks);
+      _addedBlocks = setCriteria(parameterValue ?? 0, parameters, param,
+          '($whereCriteria)', _addedBlocks);
       _addedBlocks.needEndBlock[_blockIndex] = _addedBlocks.retVal;
     }
     return this;
@@ -822,7 +889,7 @@ class UsuarioFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         orderByList.add(argFields);
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') orderByList.add(' $s ');
         }
       }
@@ -840,7 +907,7 @@ class UsuarioFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         orderByList.add('$argFields desc ');
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') orderByList.add(' $s desc ');
         }
       }
@@ -858,7 +925,7 @@ class UsuarioFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         groupByList.add(' $argFields ');
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') groupByList.add(' $s ');
         }
       }
@@ -938,15 +1005,15 @@ class UsuarioFilterBuilder extends SearchCriteria {
               break;
             default:
           }
-          if (param.value != null) {
-            whereArguments.add(param.value);
-          }
-          if (param.value2 != null) {
-            whereArguments.add(param.value2);
-          }
         }
       } else {
         whereString += param.whereString;
+      }
+      if (param.value != null) {
+        whereArguments.add(param.value);
+      }
+      if (param.value2 != null) {
+        whereArguments.add(param.value2);
       }
     }
     if (Usuario._softDeleteActivated) {
@@ -973,6 +1040,7 @@ class UsuarioFilterBuilder extends SearchCriteria {
   Future<BoolResult> delete([bool hardDelete = false]) async {
     _buildParameters();
     var r = BoolResult();
+
     if (Usuario._softDeleteActivated && !hardDelete) {
       r = await _obj._mnUsuario.updateBatch(qparams, {'isDeleted': 1});
     } else {
@@ -1002,15 +1070,25 @@ class UsuarioFilterBuilder extends SearchCriteria {
     return _obj._mnUsuario.updateBatch(qparams, values);
   }
 
-  /// This method always returns UsuarioObj if exist, otherwise returns null
+  /// This method always returns Usuario Obj if exist, otherwise returns null
   ///
-  /// Set preload to true if you want to load all fields related to child or parent
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
   ///
-  /// You can send certain field names with preloadFields parameter for preloading. For ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])
+  /// ex: toSingle(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: toSingle(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
   ///
   /// <returns>List<Usuario>
   Future<Usuario> toSingle(
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     _pagesize = 1;
     _buildParameters();
     final objFuture = _obj._mnUsuario.toList(qparams);
@@ -1019,12 +1097,20 @@ class UsuarioFilterBuilder extends SearchCriteria {
     if (data.isNotEmpty) {
       obj = Usuario.fromMap(data[0] as Map<String, dynamic>);
 
-      // RELATIONSHIPS PRELOAD
+      // RELATIONSHIPS PRELOAD CHILD
       if (preload) {
-        if (preloadFields == null || preloadFields.contains('plCuentas')) {
-          obj.plCuentas = obj.plCuentas ?? await obj.getCuentas().toList();
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('usuarios.plCuentas') &&
+            (preloadFields == null || preloadFields.contains('plCuentas'))) {
+          loadedFields.add('usuarios.plCuentas');
+          obj.plCuentas = obj.plCuentas ??
+              await obj.getCuentas().toList(
+                  preload: preload,
+                  preloadFields: preloadFields,
+                  loadParents: false,
+                  loadedFields: loadedFields);
         }
-      } // END RELATIONSHIPS PRELOAD
+      } // END RELATIONSHIPS PRELOAD CHILD
 
     } else {
       obj = null;
@@ -1032,7 +1118,7 @@ class UsuarioFilterBuilder extends SearchCriteria {
     return obj;
   }
 
-  /// This method always returns int.
+  /// This method returns int.
   ///
   /// <returns>int
   Future<int> toCount([VoidCallback Function(int c) usuarioCount]) async {
@@ -1046,22 +1132,35 @@ class UsuarioFilterBuilder extends SearchCriteria {
     return count;
   }
 
-  /// This method always returns List<Usuario>.
+  /// This method returns List<Usuario>.
   ///
-  /// Set preload to true if you want to load all fields related to child or parent
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
   ///
-  /// You can send certain field names with preloadFields parameter for preloading. For ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])
+  /// ex: toList(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
   ///
   /// <returns>List<Usuario>
   Future<List<Usuario>> toList(
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     final data = await toMapList();
-    final List<Usuario> usuariosData =
-        await Usuario.fromMapList(data, preload: preload);
+    final List<Usuario> usuariosData = await Usuario.fromMapList(data,
+        preload: preload,
+        preloadFields: preloadFields,
+        loadParents: loadParents,
+        loadedFields: loadedFields);
     return usuariosData;
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   Future<String> toJson() async {
     final list = <dynamic>[];
     final data = await toList();
@@ -1071,7 +1170,7 @@ class UsuarioFilterBuilder extends SearchCriteria {
     return json.encode(list);
   }
 
-  /// This method always returns Json String.
+  /// This method returns Json String.
   Future<String> toJsonWithChilds() async {
     final list = <dynamic>[];
     final data = await toList();
@@ -1081,7 +1180,7 @@ class UsuarioFilterBuilder extends SearchCriteria {
     return json.encode(list);
   }
 
-  /// This method always returns List<dynamic>.
+  /// This method returns List<dynamic>.
   ///
   /// <returns>List<dynamic>
   Future<List<dynamic>> toMapList() async {
@@ -1146,7 +1245,7 @@ class UsuarioFilterBuilder extends SearchCriteria {
     return items;
   }
 
-  /// This method always returns Primary Key List<int>.
+  /// This method returns Primary Key List<int>.
   /// <returns>List<int>
   Future<List<int>> toListPrimaryKey([bool buildParameters = true]) async {
     if (buildParameters) _buildParameters();
@@ -1164,8 +1263,7 @@ class UsuarioFilterBuilder extends SearchCriteria {
   /// Returns List<dynamic> for selected columns. Use this method for 'groupBy' with min,max,avg..
   ///
   /// Sample usage: (see EXAMPLE 4.2 at https://github.com/hhtokpinar/sqfEntity#group-by)
-  Future<List<dynamic>> toListObject(
-      [VoidCallback Function(List<dynamic> o) listObject]) async {
+  Future<List<dynamic>> toListObject() async {
     _buildParameters();
 
     final objectFuture = _obj._mnUsuario.toList(qparams);
@@ -1175,9 +1273,6 @@ class UsuarioFilterBuilder extends SearchCriteria {
     final int count = data.length;
     for (int i = 0; i < count; i++) {
       objectsData.add(data[i]);
-    }
-    if (listObject != null) {
-      listObject(objectsData);
     }
     return objectsData;
   }
@@ -1229,9 +1324,15 @@ class UsuarioFields {
 
 //region UsuarioManager
 class UsuarioManager extends SqfEntityProvider {
-  UsuarioManager() : super(DbComplex(), tableName: _tableName, colId: _colId);
+  UsuarioManager()
+      : super(DbComplex(),
+            tableName: _tableName,
+            primaryKeyList: _primaryKeyList,
+            whereStr: _whereStr);
   static String _tableName = 'usuarios';
-  static String _colId = 'idUsuario';
+  //static String _colId = 'idUsuario';
+  static List<String> _primaryKeyList = ['idUsuario'];
+  static String _whereStr = 'idUsuario=?';
 }
 
 //endregion UsuarioManager
@@ -1250,15 +1351,15 @@ class Categoria {
       this.descripcion, this.color, this.icono, this.tipo, this.isDeleted) {
     _setDefaultValues();
   }
-  Categoria.withId(this.idCategoria, this.descripcion, this.color, this.icono,
+  Categoria.withId(idCategoria, this.descripcion, this.color, this.icono,
       this.tipo, this.isDeleted) {
     _setDefaultValues();
   }
   Categoria.fromMap(Map<String, dynamic> o) {
     _setDefaultValues();
-    idCategoria = o['idCategoria'] as int;
+    idCategoria = int.tryParse(o['idCategoria'].toString());
     if (o['descripcion'] != null) descripcion = o['descripcion'] as String;
-    if (o['color'] != null) color = o['color'] as int;
+    if (o['color'] != null) color = int.tryParse(o['color'].toString());
     if (o['icono'] != null) icono = o['icono'] as String;
     if (o['tipo'] != null) tipo = o['tipo'] as String;
     isDeleted = o['isDeleted'] != null
@@ -1277,7 +1378,8 @@ class Categoria {
   // end FIELDS (Categoria)
 
 // COLLECTIONS & VIRTUALS (Categoria)
-  /// to load children of items to this field, use preload parameter ex: toList(preload:true) or toSingle(preload:true)
+  /// to load children of items to this field, use preload parameter. Ex: toList(preload:true) or toSingle(preload:true) or getById(preload:true)
+  /// You can also specify this object into certain preload fields. Ex: toList(preload:true, preloadFields:['plDetallesCuentas', 'plField2'..]) or so on..
   List<DetallesCuenta> plDetallesCuentas;
 
   /// get DetallesCuenta(s) filtered by categoriasIdCategoria=idCategoria
@@ -1289,6 +1391,7 @@ class Categoria {
         .equals(idCategoria)
         .and;
   }
+
 // END COLLECTIONS & VIRTUALS (Categoria)
 
   static const bool _softDeleteActivated = true;
@@ -1299,7 +1402,8 @@ class Categoria {
   }
 
   // METHODS
-  Map<String, dynamic> toMap({bool forQuery = false, bool forJson = false}) {
+  Map<String, dynamic> toMap(
+      {bool forQuery = false, bool forJson = false, bool forView = false}) {
     final map = <String, dynamic>{};
     if (idCategoria != null) {
       map['idCategoria'] = idCategoria;
@@ -1328,7 +1432,9 @@ class Categoria {
   }
 
   Future<Map<String, dynamic>> toMapWithChilds(
-      [bool forQuery = false, bool forJson = false]) async {
+      [bool forQuery = false,
+      bool forJson = false,
+      bool forView = false]) async {
     final map = <String, dynamic>{};
     if (idCategoria != null) {
       map['idCategoria'] = idCategoria;
@@ -1362,17 +1468,21 @@ class Categoria {
     return map;
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   String toJson() {
     return json.encode(toMap(forJson: true));
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   Future<String> toJsonWithChilds() async {
     return json.encode(await toMapWithChilds(false, true));
   }
 
   List<dynamic> toArgs() {
+    return [descripcion, color, icono, tipo, isDeleted];
+  }
+
+  List<dynamic> toArgsWithIds() {
     return [idCategoria, descripcion, color, icono, tipo, isDeleted];
   }
 
@@ -1411,19 +1521,29 @@ class Categoria {
     */
 
   static Future<List<Categoria>> fromMapList(List<dynamic> data,
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     final List<Categoria> objList = <Categoria>[];
     for (final map in data) {
       final obj = Categoria.fromMap(map as Map<String, dynamic>);
 
-      // RELATIONSHIPS PRELOAD
+      // RELATIONSHIPS PRELOAD CHILD
       if (preload) {
-        if (preloadFields == null ||
-            preloadFields.contains('plDetallesCuentas')) {
-          obj.plDetallesCuentas =
-              obj.plDetallesCuentas ?? await obj.getDetallesCuentas().toList();
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('categorias.plDetallesCuentas') &&
+            (preloadFields == null ||
+                preloadFields.contains('plDetallesCuentas'))) {
+          loadedFields.add('categorias.plDetallesCuentas');
+          obj.plDetallesCuentas = obj.plDetallesCuentas ??
+              await obj.getDetallesCuentas().toList(
+                  preload: preload,
+                  preloadFields: preloadFields,
+                  loadParents: false,
+                  loadedFields: loadedFields);
         }
-      } // END RELATIONSHIPS PRELOAD
+      } // END RELATIONSHIPS PRELOAD CHILD
 
       objList.add(obj);
     }
@@ -1431,16 +1551,50 @@ class Categoria {
   }
 
   /// returns Categoria by ID if exist, otherwise returns null
-  /// <param name='idCategoria'>Primary Key Value</param>
+  ///
+  /// Primary Keys: int idCategoria
+  ///
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
+  ///
+  /// ex: getById(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: getById(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
+  ///
   /// <returns>returns Categoria if exist, otherwise returns null
-  Future<Categoria> getById(int idcategoria) async {
-    if (idcategoria == null) {
+  Future<Categoria> getById(int idCategoria,
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
+    if (idCategoria == null) {
       return null;
     }
     Categoria obj;
-    final data = await _mnCategoria.getById(idcategoria);
+    final data = await _mnCategoria.getById([idCategoria]);
     if (data.length != 0) {
       obj = Categoria.fromMap(data[0] as Map<String, dynamic>);
+
+      // RELATIONSHIPS PRELOAD CHILD
+      if (preload) {
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('categorias.plDetallesCuentas') &&
+            (preloadFields == null ||
+                preloadFields.contains('plDetallesCuentas'))) {
+          loadedFields.add('categorias.plDetallesCuentas');
+          obj.plDetallesCuentas = obj.plDetallesCuentas ??
+              await obj.getDetallesCuentas().toList(
+                  preload: preload,
+                  preloadFields: preloadFields,
+                  loadParents: false,
+                  loadedFields: loadedFields);
+        }
+      } // END RELATIONSHIPS PRELOAD CHILD
+
     } else {
       obj = null;
     }
@@ -1454,7 +1608,8 @@ class Categoria {
     if (idCategoria == null || idCategoria == 0) {
       idCategoria = await _mnCategoria.insert(this);
     } else {
-      idCategoria = await _upsert();
+      // idCategoria= await _upsert(); // removed in sqfentity_gen 1.3.0+6
+      await _mnCategoria.update(this);
     }
 
     return idCategoria;
@@ -1472,26 +1627,29 @@ class Categoria {
   /// saveAll method saves the sent List<Categoria> as a bulk in one transaction
   ///
   /// Returns a <List<BoolResult>>
-  Future<List<BoolResult>> saveAll(List<Categoria> categorias) async {
-    final results = _mnCategoria.saveAll(
-        'INSERT OR REPLACE INTO categorias (idCategoria,  descripcion, color, icono, tipo,isDeleted)  VALUES (?,?,?,?,?,?)',
-        categorias);
-    return results;
+  Future<List<dynamic>> saveAll(List<Categoria> categorias) async {
+    // final results = _mnCategoria.saveAll('INSERT OR REPLACE INTO categorias (idCategoria,descripcion, color, icono, tipo,isDeleted)  VALUES (?,?,?,?,?,?)',categorias);
+    // return results; removed in sqfentity_gen 1.3.0+6
+    DbComplex().batchStart();
+    for (final obj in categorias) {
+      await obj.save();
+    }
+    return DbComplex().batchCommit();
   }
 
   /// Updates if the record exists, otherwise adds a new row
 
   /// <returns>Returns idCategoria
-  Future<int> _upsert() async {
+  Future<int> upsert() async {
     try {
       if (await _mnCategoria.rawInsert(
-              'INSERT OR REPLACE INTO categorias (idCategoria,  descripcion, color, icono, tipo,isDeleted)  VALUES (?,?,?,?,?,?)',
+              'INSERT OR REPLACE INTO categorias (idCategoria,descripcion, color, icono, tipo,isDeleted)  VALUES (?,?,?,?,?,?)',
               [idCategoria, descripcion, color, icono, tipo, isDeleted]) ==
           1) {
         saveResult = BoolResult(
             success: true,
             successMessage:
-                'Categoria idCategoria=$idCategoria updated successfuly');
+                'Categoria idCategoria=$idCategoria updated successfully');
       } else {
         saveResult = BoolResult(
             success: false,
@@ -1510,10 +1668,10 @@ class Categoria {
   ///
   /// upsertAll() method is faster then saveAll() method. upsertAll() should be used when you are sure that the primary key is greater than zero
   ///
-  /// Returns a <List<BoolResult>>
-  Future<List<BoolResult>> upsertAll(List<Categoria> categorias) async {
+  /// Returns a BoolCommitResult
+  Future<BoolCommitResult> upsertAll(List<Categoria> categorias) async {
     final results = await _mnCategoria.rawInsertAll(
-        'INSERT OR REPLACE INTO categorias (idCategoria,  descripcion, color, icono, tipo,isDeleted)  VALUES (?,?,?,?,?,?)',
+        'INSERT OR REPLACE INTO categorias (idCategoria,descripcion, color, icono, tipo,isDeleted)  VALUES (?,?,?,?,?,?)',
         categorias);
     return results;
   }
@@ -1850,11 +2008,11 @@ class CategoriaFilterBuilder extends SearchCriteria {
   }
 
   /// String whereCriteria, write raw query without 'where' keyword. Like this: 'field1 like 'test%' and field2 = 3'
-  CategoriaFilterBuilder where(String whereCriteria) {
+  CategoriaFilterBuilder where(String whereCriteria, {dynamic parameterValue}) {
     if (whereCriteria != null && whereCriteria != '') {
       final DbParameter param = DbParameter();
-      _addedBlocks =
-          setCriteria(0, parameters, param, '($whereCriteria)', _addedBlocks);
+      _addedBlocks = setCriteria(parameterValue ?? 0, parameters, param,
+          '($whereCriteria)', _addedBlocks);
       _addedBlocks.needEndBlock[_blockIndex] = _addedBlocks.retVal;
     }
     return this;
@@ -1898,7 +2056,7 @@ class CategoriaFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         orderByList.add(argFields);
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') orderByList.add(' $s ');
         }
       }
@@ -1916,7 +2074,7 @@ class CategoriaFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         orderByList.add('$argFields desc ');
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') orderByList.add(' $s desc ');
         }
       }
@@ -1934,7 +2092,7 @@ class CategoriaFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         groupByList.add(' $argFields ');
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') groupByList.add(' $s ');
         }
       }
@@ -2029,15 +2187,15 @@ class CategoriaFilterBuilder extends SearchCriteria {
               break;
             default:
           }
-          if (param.value != null) {
-            whereArguments.add(param.value);
-          }
-          if (param.value2 != null) {
-            whereArguments.add(param.value2);
-          }
         }
       } else {
         whereString += param.whereString;
+      }
+      if (param.value != null) {
+        whereArguments.add(param.value);
+      }
+      if (param.value2 != null) {
+        whereArguments.add(param.value2);
       }
     }
     if (Categoria._softDeleteActivated) {
@@ -2064,6 +2222,7 @@ class CategoriaFilterBuilder extends SearchCriteria {
   Future<BoolResult> delete([bool hardDelete = false]) async {
     _buildParameters();
     var r = BoolResult();
+
     if (Categoria._softDeleteActivated && !hardDelete) {
       r = await _obj._mnCategoria.updateBatch(qparams, {'isDeleted': 1});
     } else {
@@ -2093,15 +2252,25 @@ class CategoriaFilterBuilder extends SearchCriteria {
     return _obj._mnCategoria.updateBatch(qparams, values);
   }
 
-  /// This method always returns CategoriaObj if exist, otherwise returns null
+  /// This method always returns Categoria Obj if exist, otherwise returns null
   ///
-  /// Set preload to true if you want to load all fields related to child or parent
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
   ///
-  /// You can send certain field names with preloadFields parameter for preloading. For ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])
+  /// ex: toSingle(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: toSingle(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
   ///
   /// <returns>List<Categoria>
   Future<Categoria> toSingle(
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     _pagesize = 1;
     _buildParameters();
     final objFuture = _obj._mnCategoria.toList(qparams);
@@ -2110,14 +2279,21 @@ class CategoriaFilterBuilder extends SearchCriteria {
     if (data.isNotEmpty) {
       obj = Categoria.fromMap(data[0] as Map<String, dynamic>);
 
-      // RELATIONSHIPS PRELOAD
+      // RELATIONSHIPS PRELOAD CHILD
       if (preload) {
-        if (preloadFields == null ||
-            preloadFields.contains('plDetallesCuentas')) {
-          obj.plDetallesCuentas =
-              obj.plDetallesCuentas ?? await obj.getDetallesCuentas().toList();
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('categorias.plDetallesCuentas') &&
+            (preloadFields == null ||
+                preloadFields.contains('plDetallesCuentas'))) {
+          loadedFields.add('categorias.plDetallesCuentas');
+          obj.plDetallesCuentas = obj.plDetallesCuentas ??
+              await obj.getDetallesCuentas().toList(
+                  preload: preload,
+                  preloadFields: preloadFields,
+                  loadParents: false,
+                  loadedFields: loadedFields);
         }
-      } // END RELATIONSHIPS PRELOAD
+      } // END RELATIONSHIPS PRELOAD CHILD
 
     } else {
       obj = null;
@@ -2125,7 +2301,7 @@ class CategoriaFilterBuilder extends SearchCriteria {
     return obj;
   }
 
-  /// This method always returns int.
+  /// This method returns int.
   ///
   /// <returns>int
   Future<int> toCount([VoidCallback Function(int c) categoriaCount]) async {
@@ -2139,22 +2315,35 @@ class CategoriaFilterBuilder extends SearchCriteria {
     return count;
   }
 
-  /// This method always returns List<Categoria>.
+  /// This method returns List<Categoria>.
   ///
-  /// Set preload to true if you want to load all fields related to child or parent
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
   ///
-  /// You can send certain field names with preloadFields parameter for preloading. For ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])
+  /// ex: toList(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
   ///
   /// <returns>List<Categoria>
   Future<List<Categoria>> toList(
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     final data = await toMapList();
-    final List<Categoria> categoriasData =
-        await Categoria.fromMapList(data, preload: preload);
+    final List<Categoria> categoriasData = await Categoria.fromMapList(data,
+        preload: preload,
+        preloadFields: preloadFields,
+        loadParents: loadParents,
+        loadedFields: loadedFields);
     return categoriasData;
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   Future<String> toJson() async {
     final list = <dynamic>[];
     final data = await toList();
@@ -2164,7 +2353,7 @@ class CategoriaFilterBuilder extends SearchCriteria {
     return json.encode(list);
   }
 
-  /// This method always returns Json String.
+  /// This method returns Json String.
   Future<String> toJsonWithChilds() async {
     final list = <dynamic>[];
     final data = await toList();
@@ -2174,7 +2363,7 @@ class CategoriaFilterBuilder extends SearchCriteria {
     return json.encode(list);
   }
 
-  /// This method always returns List<dynamic>.
+  /// This method returns List<dynamic>.
   ///
   /// <returns>List<dynamic>
   Future<List<dynamic>> toMapList() async {
@@ -2239,7 +2428,7 @@ class CategoriaFilterBuilder extends SearchCriteria {
     return items;
   }
 
-  /// This method always returns Primary Key List<int>.
+  /// This method returns Primary Key List<int>.
   /// <returns>List<int>
   Future<List<int>> toListPrimaryKey([bool buildParameters = true]) async {
     if (buildParameters) _buildParameters();
@@ -2257,8 +2446,7 @@ class CategoriaFilterBuilder extends SearchCriteria {
   /// Returns List<dynamic> for selected columns. Use this method for 'groupBy' with min,max,avg..
   ///
   /// Sample usage: (see EXAMPLE 4.2 at https://github.com/hhtokpinar/sqfEntity#group-by)
-  Future<List<dynamic>> toListObject(
-      [VoidCallback Function(List<dynamic> o) listObject]) async {
+  Future<List<dynamic>> toListObject() async {
     _buildParameters();
 
     final objectFuture = _obj._mnCategoria.toList(qparams);
@@ -2268,9 +2456,6 @@ class CategoriaFilterBuilder extends SearchCriteria {
     final int count = data.length;
     for (int i = 0; i < count; i++) {
       objectsData.add(data[i]);
-    }
-    if (listObject != null) {
-      listObject(objectsData);
     }
     return objectsData;
   }
@@ -2339,9 +2524,15 @@ class CategoriaFields {
 
 //region CategoriaManager
 class CategoriaManager extends SqfEntityProvider {
-  CategoriaManager() : super(DbComplex(), tableName: _tableName, colId: _colId);
+  CategoriaManager()
+      : super(DbComplex(),
+            tableName: _tableName,
+            primaryKeyList: _primaryKeyList,
+            whereStr: _whereStr);
   static String _tableName = 'categorias';
-  static String _colId = 'idCategoria';
+  //static String _colId = 'idCategoria';
+  static List<String> _primaryKeyList = ['idCategoria'];
+  static String _whereStr = 'idCategoria=?';
 }
 
 //endregion CategoriaManager
@@ -2361,20 +2552,20 @@ class Cuenta {
       this.totalEgreso, this.usuariosIdUsuario, this.isDeleted) {
     _setDefaultValues();
   }
-  Cuenta.withId(this.idCuenta, this.descripcion, this.saldo, this.totalIngreso,
+  Cuenta.withId(idCuenta, this.descripcion, this.saldo, this.totalIngreso,
       this.totalEgreso, this.usuariosIdUsuario, this.isDeleted) {
     _setDefaultValues();
   }
   Cuenta.fromMap(Map<String, dynamic> o) {
     _setDefaultValues();
-    idCuenta = o['idCuenta'] as int;
+    idCuenta = int.tryParse(o['idCuenta'].toString());
     if (o['descripcion'] != null) descripcion = o['descripcion'] as String;
     if (o['saldo'] != null) saldo = double.tryParse(o['saldo'].toString());
     if (o['totalIngreso'] != null)
       totalIngreso = double.tryParse(o['totalIngreso'].toString());
     if (o['totalEgreso'] != null)
       totalEgreso = double.tryParse(o['totalEgreso'].toString());
-    usuariosIdUsuario = o['usuariosIdUsuario'] as int;
+    usuariosIdUsuario = int.tryParse(o['usuariosIdUsuario'].toString());
 
     isDeleted = o['isDeleted'] != null
         ? o['isDeleted'] == 1 || o['isDeleted'] == true
@@ -2399,18 +2590,21 @@ class Cuenta {
   // end FIELDS (Cuenta)
 
 // RELATIONSHIPS (Cuenta)
-  /// to load parent of items to this field, use preload parameter ex: toList(preload:true) or toSingle(preload:true)
+  /// to load parent of items to this field, use preload parameter ex: toList(preload:true) or toSingle(preload:true) or getById(preload:true)
+  /// You can also specify this object into certain preload fields. Ex: toList(preload:true, preloadFields:['plUsuario', 'plField2'..]) or so on..
   Usuario plUsuario;
 
   /// get Usuario By UsuariosIdUsuario
-  Future<Usuario> getUsuario() async {
-    final _obj = await Usuario().getById(usuariosIdUsuario);
+  Future<Usuario> getUsuario({bool loadParents = false}) async {
+    final _obj =
+        await Usuario().getById(usuariosIdUsuario, loadParents: loadParents);
     return _obj;
   }
   // END RELATIONSHIPS (Cuenta)
 
 // COLLECTIONS & VIRTUALS (Cuenta)
-  /// to load children of items to this field, use preload parameter ex: toList(preload:true) or toSingle(preload:true)
+  /// to load children of items to this field, use preload parameter. Ex: toList(preload:true) or toSingle(preload:true) or getById(preload:true)
+  /// You can also specify this object into certain preload fields. Ex: toList(preload:true, preloadFields:['plDetallesCuentas', 'plField2'..]) or so on..
   List<DetallesCuenta> plDetallesCuentas;
 
   /// get DetallesCuenta(s) filtered by cuentasIdCuenta=idCuenta
@@ -2422,6 +2616,7 @@ class Cuenta {
         .equals(idCuenta)
         .and;
   }
+
 // END COLLECTIONS & VIRTUALS (Cuenta)
 
   static const bool _softDeleteActivated = true;
@@ -2432,7 +2627,8 @@ class Cuenta {
   }
 
   // METHODS
-  Map<String, dynamic> toMap({bool forQuery = false, bool forJson = false}) {
+  Map<String, dynamic> toMap(
+      {bool forQuery = false, bool forJson = false, bool forView = false}) {
     final map = <String, dynamic>{};
     if (idCuenta != null) {
       map['idCuenta'] = idCuenta;
@@ -2454,7 +2650,7 @@ class Cuenta {
     }
 
     if (usuariosIdUsuario != null) {
-      map['usuariosIdUsuario'] = usuariosIdUsuario;
+      map['usuariosIdUsuario'] = forView ? plUsuario.nombre : usuariosIdUsuario;
     }
 
     if (isDeleted != null) {
@@ -2465,7 +2661,9 @@ class Cuenta {
   }
 
   Future<Map<String, dynamic>> toMapWithChilds(
-      [bool forQuery = false, bool forJson = false]) async {
+      [bool forQuery = false,
+      bool forJson = false,
+      bool forView = false]) async {
     final map = <String, dynamic>{};
     if (idCuenta != null) {
       map['idCuenta'] = idCuenta;
@@ -2487,7 +2685,7 @@ class Cuenta {
     }
 
     if (usuariosIdUsuario != null) {
-      map['usuariosIdUsuario'] = usuariosIdUsuario;
+      map['usuariosIdUsuario'] = forView ? plUsuario.nombre : usuariosIdUsuario;
     }
 
     if (isDeleted != null) {
@@ -2503,17 +2701,28 @@ class Cuenta {
     return map;
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   String toJson() {
     return json.encode(toMap(forJson: true));
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   Future<String> toJsonWithChilds() async {
     return json.encode(await toMapWithChilds(false, true));
   }
 
   List<dynamic> toArgs() {
+    return [
+      descripcion,
+      saldo,
+      totalIngreso,
+      totalEgreso,
+      usuariosIdUsuario,
+      isDeleted
+    ];
+  }
+
+  List<dynamic> toArgsWithIds() {
     return [
       idCuenta,
       descripcion,
@@ -2557,24 +2766,40 @@ class Cuenta {
     */
 
   static Future<List<Cuenta>> fromMapList(List<dynamic> data,
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     final List<Cuenta> objList = <Cuenta>[];
     for (final map in data) {
       final obj = Cuenta.fromMap(map as Map<String, dynamic>);
 
-      // RELATIONSHIPS PRELOAD
+      // RELATIONSHIPS PRELOAD CHILD
       if (preload) {
-        if (preloadFields == null ||
-            preloadFields.contains('plDetallesCuentas')) {
-          obj.plDetallesCuentas =
-              obj.plDetallesCuentas ?? await obj.getDetallesCuentas().toList();
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('cuentas.plDetallesCuentas') &&
+            (preloadFields == null ||
+                preloadFields.contains('plDetallesCuentas'))) {
+          loadedFields.add('cuentas.plDetallesCuentas');
+          obj.plDetallesCuentas = obj.plDetallesCuentas ??
+              await obj.getDetallesCuentas().toList(
+                  preload: preload,
+                  preloadFields: preloadFields,
+                  loadParents: false,
+                  loadedFields: loadedFields);
         }
-      } // END RELATIONSHIPS PRELOAD
+      } // END RELATIONSHIPS PRELOAD CHILD
 
       // RELATIONSHIPS PRELOAD
-      if (preload) {
-        if (preloadFields == null || preloadFields.contains('plUsuario')) {
-          obj.plUsuario = obj.plUsuario ?? await obj.getUsuario();
+      if (preload || loadParents) {
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('usuarios.plUsuario') &&
+            (preloadFields == null ||
+                loadParents ||
+                preloadFields.contains('plUsuario'))) {
+          loadedFields.add('usuarios.plUsuario');
+          obj.plUsuario =
+              obj.plUsuario ?? await obj.getUsuario(loadParents: loadParents);
         }
       } // END RELATIONSHIPS PRELOAD
 
@@ -2584,16 +2809,63 @@ class Cuenta {
   }
 
   /// returns Cuenta by ID if exist, otherwise returns null
-  /// <param name='idCuenta'>Primary Key Value</param>
+  ///
+  /// Primary Keys: int idCuenta
+  ///
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
+  ///
+  /// ex: getById(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: getById(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
+  ///
   /// <returns>returns Cuenta if exist, otherwise returns null
-  Future<Cuenta> getById(int idcuenta) async {
-    if (idcuenta == null) {
+  Future<Cuenta> getById(int idCuenta,
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
+    if (idCuenta == null) {
       return null;
     }
     Cuenta obj;
-    final data = await _mnCuenta.getById(idcuenta);
+    final data = await _mnCuenta.getById([idCuenta]);
     if (data.length != 0) {
       obj = Cuenta.fromMap(data[0] as Map<String, dynamic>);
+
+      // RELATIONSHIPS PRELOAD CHILD
+      if (preload) {
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('cuentas.plDetallesCuentas') &&
+            (preloadFields == null ||
+                preloadFields.contains('plDetallesCuentas'))) {
+          loadedFields.add('cuentas.plDetallesCuentas');
+          obj.plDetallesCuentas = obj.plDetallesCuentas ??
+              await obj.getDetallesCuentas().toList(
+                  preload: preload,
+                  preloadFields: preloadFields,
+                  loadParents: false,
+                  loadedFields: loadedFields);
+        }
+      } // END RELATIONSHIPS PRELOAD CHILD
+
+      // RELATIONSHIPS PRELOAD
+      if (preload || loadParents) {
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('usuarios.plUsuario') &&
+            (preloadFields == null ||
+                loadParents ||
+                preloadFields.contains('plUsuario'))) {
+          loadedFields.add('usuarios.plUsuario');
+          obj.plUsuario =
+              obj.plUsuario ?? await obj.getUsuario(loadParents: loadParents);
+        }
+      } // END RELATIONSHIPS PRELOAD
+
     } else {
       obj = null;
     }
@@ -2607,7 +2879,8 @@ class Cuenta {
     if (idCuenta == null || idCuenta == 0) {
       idCuenta = await _mnCuenta.insert(this);
     } else {
-      idCuenta = await _upsert();
+      // idCuenta= await _upsert(); // removed in sqfentity_gen 1.3.0+6
+      await _mnCuenta.update(this);
     }
 
     return idCuenta;
@@ -2625,20 +2898,23 @@ class Cuenta {
   /// saveAll method saves the sent List<Cuenta> as a bulk in one transaction
   ///
   /// Returns a <List<BoolResult>>
-  Future<List<BoolResult>> saveAll(List<Cuenta> cuentas) async {
-    final results = _mnCuenta.saveAll(
-        'INSERT OR REPLACE INTO cuentas (idCuenta,  descripcion, saldo, totalIngreso, totalEgreso, usuariosIdUsuario,isDeleted)  VALUES (?,?,?,?,?,?,?)',
-        cuentas);
-    return results;
+  Future<List<dynamic>> saveAll(List<Cuenta> cuentas) async {
+    // final results = _mnCuenta.saveAll('INSERT OR REPLACE INTO cuentas (idCuenta,descripcion, saldo, totalIngreso, totalEgreso, usuariosIdUsuario,isDeleted)  VALUES (?,?,?,?,?,?,?)',cuentas);
+    // return results; removed in sqfentity_gen 1.3.0+6
+    DbComplex().batchStart();
+    for (final obj in cuentas) {
+      await obj.save();
+    }
+    return DbComplex().batchCommit();
   }
 
   /// Updates if the record exists, otherwise adds a new row
 
   /// <returns>Returns idCuenta
-  Future<int> _upsert() async {
+  Future<int> upsert() async {
     try {
       if (await _mnCuenta.rawInsert(
-              'INSERT OR REPLACE INTO cuentas (idCuenta,  descripcion, saldo, totalIngreso, totalEgreso, usuariosIdUsuario,isDeleted)  VALUES (?,?,?,?,?,?,?)',
+              'INSERT OR REPLACE INTO cuentas (idCuenta,descripcion, saldo, totalIngreso, totalEgreso, usuariosIdUsuario,isDeleted)  VALUES (?,?,?,?,?,?,?)',
               [
                 idCuenta,
                 descripcion,
@@ -2651,7 +2927,7 @@ class Cuenta {
           1) {
         saveResult = BoolResult(
             success: true,
-            successMessage: 'Cuenta idCuenta=$idCuenta updated successfuly');
+            successMessage: 'Cuenta idCuenta=$idCuenta updated successfully');
       } else {
         saveResult = BoolResult(
             success: false,
@@ -2670,10 +2946,10 @@ class Cuenta {
   ///
   /// upsertAll() method is faster then saveAll() method. upsertAll() should be used when you are sure that the primary key is greater than zero
   ///
-  /// Returns a <List<BoolResult>>
-  Future<List<BoolResult>> upsertAll(List<Cuenta> cuentas) async {
+  /// Returns a BoolCommitResult
+  Future<BoolCommitResult> upsertAll(List<Cuenta> cuentas) async {
     final results = await _mnCuenta.rawInsertAll(
-        'INSERT OR REPLACE INTO cuentas (idCuenta,  descripcion, saldo, totalIngreso, totalEgreso, usuariosIdUsuario,isDeleted)  VALUES (?,?,?,?,?,?,?)',
+        'INSERT OR REPLACE INTO cuentas (idCuenta,descripcion, saldo, totalIngreso, totalEgreso, usuariosIdUsuario,isDeleted)  VALUES (?,?,?,?,?,?,?)',
         cuentas);
     return results;
   }
@@ -3025,11 +3301,11 @@ class CuentaFilterBuilder extends SearchCriteria {
   }
 
   /// String whereCriteria, write raw query without 'where' keyword. Like this: 'field1 like 'test%' and field2 = 3'
-  CuentaFilterBuilder where(String whereCriteria) {
+  CuentaFilterBuilder where(String whereCriteria, {dynamic parameterValue}) {
     if (whereCriteria != null && whereCriteria != '') {
       final DbParameter param = DbParameter();
-      _addedBlocks =
-          setCriteria(0, parameters, param, '($whereCriteria)', _addedBlocks);
+      _addedBlocks = setCriteria(parameterValue ?? 0, parameters, param,
+          '($whereCriteria)', _addedBlocks);
       _addedBlocks.needEndBlock[_blockIndex] = _addedBlocks.retVal;
     }
     return this;
@@ -3073,7 +3349,7 @@ class CuentaFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         orderByList.add(argFields);
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') orderByList.add(' $s ');
         }
       }
@@ -3091,7 +3367,7 @@ class CuentaFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         orderByList.add('$argFields desc ');
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') orderByList.add(' $s desc ');
         }
       }
@@ -3109,7 +3385,7 @@ class CuentaFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         groupByList.add(' $argFields ');
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') groupByList.add(' $s ');
         }
       }
@@ -3210,15 +3486,15 @@ class CuentaFilterBuilder extends SearchCriteria {
               break;
             default:
           }
-          if (param.value != null) {
-            whereArguments.add(param.value);
-          }
-          if (param.value2 != null) {
-            whereArguments.add(param.value2);
-          }
         }
       } else {
         whereString += param.whereString;
+      }
+      if (param.value != null) {
+        whereArguments.add(param.value);
+      }
+      if (param.value2 != null) {
+        whereArguments.add(param.value2);
       }
     }
     if (Cuenta._softDeleteActivated) {
@@ -3290,15 +3566,25 @@ class CuentaFilterBuilder extends SearchCriteria {
     return _obj._mnCuenta.updateBatch(qparams, values);
   }
 
-  /// This method always returns CuentaObj if exist, otherwise returns null
+  /// This method always returns Cuenta Obj if exist, otherwise returns null
   ///
-  /// Set preload to true if you want to load all fields related to child or parent
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
   ///
-  /// You can send certain field names with preloadFields parameter for preloading. For ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])
+  /// ex: toSingle(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: toSingle(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
   ///
   /// <returns>List<Cuenta>
   Future<Cuenta> toSingle(
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     _pagesize = 1;
     _buildParameters();
     final objFuture = _obj._mnCuenta.toList(qparams);
@@ -3307,19 +3593,32 @@ class CuentaFilterBuilder extends SearchCriteria {
     if (data.isNotEmpty) {
       obj = Cuenta.fromMap(data[0] as Map<String, dynamic>);
 
-      // RELATIONSHIPS PRELOAD
+      // RELATIONSHIPS PRELOAD CHILD
       if (preload) {
-        if (preloadFields == null ||
-            preloadFields.contains('plDetallesCuentas')) {
-          obj.plDetallesCuentas =
-              obj.plDetallesCuentas ?? await obj.getDetallesCuentas().toList();
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('cuentas.plDetallesCuentas') &&
+            (preloadFields == null ||
+                preloadFields.contains('plDetallesCuentas'))) {
+          loadedFields.add('cuentas.plDetallesCuentas');
+          obj.plDetallesCuentas = obj.plDetallesCuentas ??
+              await obj.getDetallesCuentas().toList(
+                  preload: preload,
+                  preloadFields: preloadFields,
+                  loadParents: false,
+                  loadedFields: loadedFields);
         }
-      } // END RELATIONSHIPS PRELOAD
+      } // END RELATIONSHIPS PRELOAD CHILD
 
       // RELATIONSHIPS PRELOAD
-      if (preload) {
-        if (preloadFields == null || preloadFields.contains('plUsuario')) {
-          obj.plUsuario = obj.plUsuario ?? await obj.getUsuario();
+      if (preload || loadParents) {
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('usuarios.plUsuario') &&
+            (preloadFields == null ||
+                loadParents ||
+                preloadFields.contains('plUsuario'))) {
+          loadedFields.add('usuarios.plUsuario');
+          obj.plUsuario =
+              obj.plUsuario ?? await obj.getUsuario(loadParents: loadParents);
         }
       } // END RELATIONSHIPS PRELOAD
 
@@ -3329,7 +3628,7 @@ class CuentaFilterBuilder extends SearchCriteria {
     return obj;
   }
 
-  /// This method always returns int.
+  /// This method returns int.
   ///
   /// <returns>int
   Future<int> toCount([VoidCallback Function(int c) cuentaCount]) async {
@@ -3343,22 +3642,35 @@ class CuentaFilterBuilder extends SearchCriteria {
     return count;
   }
 
-  /// This method always returns List<Cuenta>.
+  /// This method returns List<Cuenta>.
   ///
-  /// Set preload to true if you want to load all fields related to child or parent
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
   ///
-  /// You can send certain field names with preloadFields parameter for preloading. For ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])
+  /// ex: toList(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
   ///
   /// <returns>List<Cuenta>
   Future<List<Cuenta>> toList(
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     final data = await toMapList();
-    final List<Cuenta> cuentasData =
-        await Cuenta.fromMapList(data, preload: preload);
+    final List<Cuenta> cuentasData = await Cuenta.fromMapList(data,
+        preload: preload,
+        preloadFields: preloadFields,
+        loadParents: loadParents,
+        loadedFields: loadedFields);
     return cuentasData;
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   Future<String> toJson() async {
     final list = <dynamic>[];
     final data = await toList();
@@ -3368,7 +3680,7 @@ class CuentaFilterBuilder extends SearchCriteria {
     return json.encode(list);
   }
 
-  /// This method always returns Json String.
+  /// This method returns Json String.
   Future<String> toJsonWithChilds() async {
     final list = <dynamic>[];
     final data = await toList();
@@ -3378,7 +3690,7 @@ class CuentaFilterBuilder extends SearchCriteria {
     return json.encode(list);
   }
 
-  /// This method always returns List<dynamic>.
+  /// This method returns List<dynamic>.
   ///
   /// <returns>List<dynamic>
   Future<List<dynamic>> toMapList() async {
@@ -3443,7 +3755,7 @@ class CuentaFilterBuilder extends SearchCriteria {
     return items;
   }
 
-  /// This method always returns Primary Key List<int>.
+  /// This method returns Primary Key List<int>.
   /// <returns>List<int>
   Future<List<int>> toListPrimaryKey([bool buildParameters = true]) async {
     if (buildParameters) _buildParameters();
@@ -3461,8 +3773,7 @@ class CuentaFilterBuilder extends SearchCriteria {
   /// Returns List<dynamic> for selected columns. Use this method for 'groupBy' with min,max,avg..
   ///
   /// Sample usage: (see EXAMPLE 4.2 at https://github.com/hhtokpinar/sqfEntity#group-by)
-  Future<List<dynamic>> toListObject(
-      [VoidCallback Function(List<dynamic> o) listObject]) async {
+  Future<List<dynamic>> toListObject() async {
     _buildParameters();
 
     final objectFuture = _obj._mnCuenta.toList(qparams);
@@ -3472,9 +3783,6 @@ class CuentaFilterBuilder extends SearchCriteria {
     final int count = data.length;
     for (int i = 0; i < count; i++) {
       objectsData.add(data[i]);
-    }
-    if (listObject != null) {
-      listObject(objectsData);
     }
     return objectsData;
   }
@@ -3551,9 +3859,15 @@ class CuentaFields {
 
 //region CuentaManager
 class CuentaManager extends SqfEntityProvider {
-  CuentaManager() : super(DbComplex(), tableName: _tableName, colId: _colId);
+  CuentaManager()
+      : super(DbComplex(),
+            tableName: _tableName,
+            primaryKeyList: _primaryKeyList,
+            whereStr: _whereStr);
   static String _tableName = 'cuentas';
-  static String _colId = 'idCuenta';
+  //static String _colId = 'idCuenta';
+  static List<String> _primaryKeyList = ['idCuenta'];
+  static String _whereStr = 'idCuenta=?';
 }
 
 //endregion CuentaManager
@@ -3564,7 +3878,6 @@ class DetallesCuenta {
       this.descripcion,
       this.fecha,
       this.monto,
-      this.saldoEnFecha,
       this.tipoTransaccion,
       this.cuentasIdCuenta,
       this.categoriasIdCategoria,
@@ -3575,7 +3888,6 @@ class DetallesCuenta {
       this.descripcion,
       this.fecha,
       this.monto,
-      this.saldoEnFecha,
       this.tipoTransaccion,
       this.cuentasIdCuenta,
       this.categoriasIdCategoria,
@@ -3583,11 +3895,10 @@ class DetallesCuenta {
     _setDefaultValues();
   }
   DetallesCuenta.withId(
-      this.idDetalleCuenta,
+      idDetalleCuenta,
       this.descripcion,
       this.fecha,
       this.monto,
-      this.saldoEnFecha,
       this.tipoTransaccion,
       this.cuentasIdCuenta,
       this.categoriasIdCategoria,
@@ -3596,17 +3907,15 @@ class DetallesCuenta {
   }
   DetallesCuenta.fromMap(Map<String, dynamic> o) {
     _setDefaultValues();
-    idDetalleCuenta = o['idDetalleCuenta'] as int;
+    idDetalleCuenta = int.tryParse(o['idDetalleCuenta'].toString());
     if (o['descripcion'] != null) descripcion = o['descripcion'] as String;
     if (o['fecha'] != null) fecha = o['fecha'] as String;
     if (o['monto'] != null) monto = double.tryParse(o['monto'].toString());
-    if (o['saldoEnFecha'] != null)
-      saldoEnFecha = double.tryParse(o['saldoEnFecha'].toString());
     if (o['tipoTransaccion'] != null)
       tipoTransaccion = o['tipoTransaccion'] as String;
-    cuentasIdCuenta = o['cuentasIdCuenta'] as int;
+    cuentasIdCuenta = int.tryParse(o['cuentasIdCuenta'].toString());
 
-    categoriasIdCategoria = o['categoriasIdCategoria'] as int;
+    categoriasIdCategoria = int.tryParse(o['categoriasIdCategoria'].toString());
 
     isDeleted = o['isDeleted'] != null
         ? o['isDeleted'] == 1 || o['isDeleted'] == true
@@ -3626,7 +3935,6 @@ class DetallesCuenta {
   String descripcion;
   String fecha;
   double monto;
-  double saldoEnFecha;
   String tipoTransaccion;
   int cuentasIdCuenta;
   int categoriasIdCategoria;
@@ -3636,21 +3944,25 @@ class DetallesCuenta {
   // end FIELDS (DetallesCuenta)
 
 // RELATIONSHIPS (DetallesCuenta)
-  /// to load parent of items to this field, use preload parameter ex: toList(preload:true) or toSingle(preload:true)
+  /// to load parent of items to this field, use preload parameter ex: toList(preload:true) or toSingle(preload:true) or getById(preload:true)
+  /// You can also specify this object into certain preload fields. Ex: toList(preload:true, preloadFields:['plCuenta', 'plField2'..]) or so on..
   Cuenta plCuenta;
 
   /// get Cuenta By CuentasIdCuenta
-  Future<Cuenta> getCuenta() async {
-    final _obj = await Cuenta().getById(cuentasIdCuenta);
+  Future<Cuenta> getCuenta({bool loadParents = false}) async {
+    final _obj =
+        await Cuenta().getById(cuentasIdCuenta, loadParents: loadParents);
     return _obj;
   }
 
-  /// to load parent of items to this field, use preload parameter ex: toList(preload:true) or toSingle(preload:true)
+  /// to load parent of items to this field, use preload parameter ex: toList(preload:true) or toSingle(preload:true) or getById(preload:true)
+  /// You can also specify this object into certain preload fields. Ex: toList(preload:true, preloadFields:['plCategoria', 'plField2'..]) or so on..
   Categoria plCategoria;
 
   /// get Categoria By CategoriasIdCategoria
-  Future<Categoria> getCategoria() async {
-    final _obj = await Categoria().getById(categoriasIdCategoria);
+  Future<Categoria> getCategoria({bool loadParents = false}) async {
+    final _obj = await Categoria()
+        .getById(categoriasIdCategoria, loadParents: loadParents);
     return _obj;
   }
   // END RELATIONSHIPS (DetallesCuenta)
@@ -3663,7 +3975,8 @@ class DetallesCuenta {
   }
 
   // METHODS
-  Map<String, dynamic> toMap({bool forQuery = false, bool forJson = false}) {
+  Map<String, dynamic> toMap(
+      {bool forQuery = false, bool forJson = false, bool forView = false}) {
     final map = <String, dynamic>{};
     if (idDetalleCuenta != null) {
       map['idDetalleCuenta'] = idDetalleCuenta;
@@ -3680,20 +3993,17 @@ class DetallesCuenta {
       map['monto'] = monto;
     }
 
-    if (saldoEnFecha != null) {
-      map['saldoEnFecha'] = saldoEnFecha;
-    }
-
     if (tipoTransaccion != null) {
       map['tipoTransaccion'] = tipoTransaccion;
     }
 
     if (cuentasIdCuenta != null) {
-      map['cuentasIdCuenta'] = cuentasIdCuenta;
+      map['cuentasIdCuenta'] = forView ? plCuenta.descripcion : cuentasIdCuenta;
     }
 
     if (categoriasIdCategoria != null) {
-      map['categoriasIdCategoria'] = categoriasIdCategoria;
+      map['categoriasIdCategoria'] =
+          forView ? plCategoria.descripcion : categoriasIdCategoria;
     }
 
     if (isDeleted != null) {
@@ -3704,7 +4014,9 @@ class DetallesCuenta {
   }
 
   Future<Map<String, dynamic>> toMapWithChilds(
-      [bool forQuery = false, bool forJson = false]) async {
+      [bool forQuery = false,
+      bool forJson = false,
+      bool forView = false]) async {
     final map = <String, dynamic>{};
     if (idDetalleCuenta != null) {
       map['idDetalleCuenta'] = idDetalleCuenta;
@@ -3721,20 +4033,17 @@ class DetallesCuenta {
       map['monto'] = monto;
     }
 
-    if (saldoEnFecha != null) {
-      map['saldoEnFecha'] = saldoEnFecha;
-    }
-
     if (tipoTransaccion != null) {
       map['tipoTransaccion'] = tipoTransaccion;
     }
 
     if (cuentasIdCuenta != null) {
-      map['cuentasIdCuenta'] = cuentasIdCuenta;
+      map['cuentasIdCuenta'] = forView ? plCuenta.descripcion : cuentasIdCuenta;
     }
 
     if (categoriasIdCategoria != null) {
-      map['categoriasIdCategoria'] = categoriasIdCategoria;
+      map['categoriasIdCategoria'] =
+          forView ? plCategoria.descripcion : categoriasIdCategoria;
     }
 
     if (isDeleted != null) {
@@ -3744,23 +4053,34 @@ class DetallesCuenta {
     return map;
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   String toJson() {
     return json.encode(toMap(forJson: true));
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   Future<String> toJsonWithChilds() async {
     return json.encode(await toMapWithChilds(false, true));
   }
 
   List<dynamic> toArgs() {
     return [
+      descripcion,
+      fecha,
+      monto,
+      tipoTransaccion,
+      cuentasIdCuenta,
+      categoriasIdCategoria,
+      isDeleted
+    ];
+  }
+
+  List<dynamic> toArgsWithIds() {
+    return [
       idDetalleCuenta,
       descripcion,
       fecha,
       monto,
-      saldoEnFecha,
       tipoTransaccion,
       cuentasIdCuenta,
       categoriasIdCategoria,
@@ -3803,18 +4123,32 @@ class DetallesCuenta {
     */
 
   static Future<List<DetallesCuenta>> fromMapList(List<dynamic> data,
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     final List<DetallesCuenta> objList = <DetallesCuenta>[];
     for (final map in data) {
       final obj = DetallesCuenta.fromMap(map as Map<String, dynamic>);
 
       // RELATIONSHIPS PRELOAD
-      if (preload) {
-        if (preloadFields == null || preloadFields.contains('plCuenta')) {
-          obj.plCuenta = obj.plCuenta ?? await obj.getCuenta();
+      if (preload || loadParents) {
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('cuentas.plCuenta') &&
+            (preloadFields == null ||
+                loadParents ||
+                preloadFields.contains('plCuenta'))) {
+          loadedFields.add('cuentas.plCuenta');
+          obj.plCuenta =
+              obj.plCuenta ?? await obj.getCuenta(loadParents: loadParents);
         }
-        if (preloadFields == null || preloadFields.contains('plCategoria')) {
-          obj.plCategoria = obj.plCategoria ?? await obj.getCategoria();
+        if (!loadedFields.contains('categorias.plCategoria') &&
+            (preloadFields == null ||
+                loadParents ||
+                preloadFields.contains('plCategoria'))) {
+          loadedFields.add('categorias.plCategoria');
+          obj.plCategoria = obj.plCategoria ??
+              await obj.getCategoria(loadParents: loadParents);
         }
       } // END RELATIONSHIPS PRELOAD
 
@@ -3824,16 +4158,55 @@ class DetallesCuenta {
   }
 
   /// returns DetallesCuenta by ID if exist, otherwise returns null
-  /// <param name='idDetalleCuenta'>Primary Key Value</param>
+  ///
+  /// Primary Keys: int idDetalleCuenta
+  ///
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
+  ///
+  /// ex: getById(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: getById(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
+  ///
   /// <returns>returns DetallesCuenta if exist, otherwise returns null
-  Future<DetallesCuenta> getById(int iddetallecuenta) async {
-    if (iddetallecuenta == null) {
+  Future<DetallesCuenta> getById(int idDetalleCuenta,
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
+    if (idDetalleCuenta == null) {
       return null;
     }
     DetallesCuenta obj;
-    final data = await _mnDetallesCuenta.getById(iddetallecuenta);
+    final data = await _mnDetallesCuenta.getById([idDetalleCuenta]);
     if (data.length != 0) {
       obj = DetallesCuenta.fromMap(data[0] as Map<String, dynamic>);
+
+      // RELATIONSHIPS PRELOAD
+      if (preload || loadParents) {
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('cuentas.plCuenta') &&
+            (preloadFields == null ||
+                loadParents ||
+                preloadFields.contains('plCuenta'))) {
+          loadedFields.add('cuentas.plCuenta');
+          obj.plCuenta =
+              obj.plCuenta ?? await obj.getCuenta(loadParents: loadParents);
+        }
+        if (!loadedFields.contains('categorias.plCategoria') &&
+            (preloadFields == null ||
+                loadParents ||
+                preloadFields.contains('plCategoria'))) {
+          loadedFields.add('categorias.plCategoria');
+          obj.plCategoria = obj.plCategoria ??
+              await obj.getCategoria(loadParents: loadParents);
+        }
+      } // END RELATIONSHIPS PRELOAD
+
     } else {
       obj = null;
     }
@@ -3847,7 +4220,8 @@ class DetallesCuenta {
     if (idDetalleCuenta == null || idDetalleCuenta == 0) {
       idDetalleCuenta = await _mnDetallesCuenta.insert(this);
     } else {
-      idDetalleCuenta = await _upsert();
+      // idDetalleCuenta= await _upsert(); // removed in sqfentity_gen 1.3.0+6
+      await _mnDetallesCuenta.update(this);
     }
 
     return idDetalleCuenta;
@@ -3865,26 +4239,28 @@ class DetallesCuenta {
   /// saveAll method saves the sent List<DetallesCuenta> as a bulk in one transaction
   ///
   /// Returns a <List<BoolResult>>
-  Future<List<BoolResult>> saveAll(List<DetallesCuenta> detallescuentas) async {
-    final results = _mnDetallesCuenta.saveAll(
-        'INSERT OR REPLACE INTO detallesCuenta (idDetalleCuenta,  descripcion, fecha, monto, saldoEnFecha, tipoTransaccion, cuentasIdCuenta, categoriasIdCategoria,isDeleted)  VALUES (?,?,?,?,?,?,?,?,?)',
-        detallescuentas);
-    return results;
+  Future<List<dynamic>> saveAll(List<DetallesCuenta> detallescuentas) async {
+    // final results = _mnDetallesCuenta.saveAll('INSERT OR REPLACE INTO detallesCuenta (idDetalleCuenta,descripcion, fecha, monto, tipoTransaccion, cuentasIdCuenta, categoriasIdCategoria,isDeleted)  VALUES (?,?,?,?,?,?,?,?)',detallescuentas);
+    // return results; removed in sqfentity_gen 1.3.0+6
+    DbComplex().batchStart();
+    for (final obj in detallescuentas) {
+      await obj.save();
+    }
+    return DbComplex().batchCommit();
   }
 
   /// Updates if the record exists, otherwise adds a new row
 
   /// <returns>Returns idDetalleCuenta
-  Future<int> _upsert() async {
+  Future<int> upsert() async {
     try {
       if (await _mnDetallesCuenta.rawInsert(
-              'INSERT OR REPLACE INTO detallesCuenta (idDetalleCuenta,  descripcion, fecha, monto, saldoEnFecha, tipoTransaccion, cuentasIdCuenta, categoriasIdCategoria,isDeleted)  VALUES (?,?,?,?,?,?,?,?,?)',
+              'INSERT OR REPLACE INTO detallesCuenta (idDetalleCuenta,descripcion, fecha, monto, tipoTransaccion, cuentasIdCuenta, categoriasIdCategoria,isDeleted)  VALUES (?,?,?,?,?,?,?,?)',
               [
                 idDetalleCuenta,
                 descripcion,
                 fecha,
                 monto,
-                saldoEnFecha,
                 tipoTransaccion,
                 cuentasIdCuenta,
                 categoriasIdCategoria,
@@ -3894,7 +4270,7 @@ class DetallesCuenta {
         saveResult = BoolResult(
             success: true,
             successMessage:
-                'DetallesCuenta idDetalleCuenta=$idDetalleCuenta updated successfuly');
+                'DetallesCuenta idDetalleCuenta=$idDetalleCuenta updated successfully');
       } else {
         saveResult = BoolResult(
             success: false,
@@ -3914,11 +4290,11 @@ class DetallesCuenta {
   ///
   /// upsertAll() method is faster then saveAll() method. upsertAll() should be used when you are sure that the primary key is greater than zero
   ///
-  /// Returns a <List<BoolResult>>
-  Future<List<BoolResult>> upsertAll(
+  /// Returns a BoolCommitResult
+  Future<BoolCommitResult> upsertAll(
       List<DetallesCuenta> detallescuentas) async {
     final results = await _mnDetallesCuenta.rawInsertAll(
-        'INSERT OR REPLACE INTO detallesCuenta (idDetalleCuenta,  descripcion, fecha, monto, saldoEnFecha, tipoTransaccion, cuentasIdCuenta, categoriasIdCategoria,isDeleted)  VALUES (?,?,?,?,?,?,?,?,?)',
+        'INSERT OR REPLACE INTO detallesCuenta (idDetalleCuenta,descripcion, fecha, monto, tipoTransaccion, cuentasIdCuenta, categoriasIdCategoria,isDeleted)  VALUES (?,?,?,?,?,?,?,?)',
         detallescuentas);
     return results;
   }
@@ -3974,7 +4350,6 @@ class DetallesCuenta {
 
   void _setDefaultValues() {
     monto = monto ?? 0;
-    saldoEnFecha = saldoEnFecha ?? 0;
     cuentasIdCuenta = cuentasIdCuenta ?? 0;
     categoriasIdCategoria = categoriasIdCategoria ?? 0;
     isDeleted = isDeleted ?? false;
@@ -4267,11 +4642,12 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
   }
 
   /// String whereCriteria, write raw query without 'where' keyword. Like this: 'field1 like 'test%' and field2 = 3'
-  DetallesCuentaFilterBuilder where(String whereCriteria) {
+  DetallesCuentaFilterBuilder where(String whereCriteria,
+      {dynamic parameterValue}) {
     if (whereCriteria != null && whereCriteria != '') {
       final DbParameter param = DbParameter();
-      _addedBlocks =
-          setCriteria(0, parameters, param, '($whereCriteria)', _addedBlocks);
+      _addedBlocks = setCriteria(parameterValue ?? 0, parameters, param,
+          '($whereCriteria)', _addedBlocks);
       _addedBlocks.needEndBlock[_blockIndex] = _addedBlocks.retVal;
     }
     return this;
@@ -4315,7 +4691,7 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         orderByList.add(argFields);
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') orderByList.add(' $s ');
         }
       }
@@ -4333,7 +4709,7 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         orderByList.add('$argFields desc ');
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') orderByList.add(' $s desc ');
         }
       }
@@ -4351,7 +4727,7 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         groupByList.add(' $argFields ');
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') groupByList.add(' $s ');
         }
       }
@@ -4387,11 +4763,6 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
   DetallesCuentaField _monto;
   DetallesCuentaField get monto {
     return _monto = setField(_monto, 'monto', DbType.real);
-  }
-
-  DetallesCuentaField _saldoEnFecha;
-  DetallesCuentaField get saldoEnFecha {
-    return _saldoEnFecha = setField(_saldoEnFecha, 'saldoEnFecha', DbType.real);
   }
 
   DetallesCuentaField _tipoTransaccion;
@@ -4466,15 +4837,15 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
               break;
             default:
           }
-          if (param.value != null) {
-            whereArguments.add(param.value);
-          }
-          if (param.value2 != null) {
-            whereArguments.add(param.value2);
-          }
         }
       } else {
         whereString += param.whereString;
+      }
+      if (param.value != null) {
+        whereArguments.add(param.value);
+      }
+      if (param.value2 != null) {
+        whereArguments.add(param.value2);
       }
     }
     if (DetallesCuenta._softDeleteActivated) {
@@ -4501,6 +4872,7 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
   Future<BoolResult> delete([bool hardDelete = false]) async {
     _buildParameters();
     var r = BoolResult();
+
     if (DetallesCuenta._softDeleteActivated && !hardDelete) {
       r = await _obj._mnDetallesCuenta.updateBatch(qparams, {'isDeleted': 1});
     } else {
@@ -4530,15 +4902,25 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
     return _obj._mnDetallesCuenta.updateBatch(qparams, values);
   }
 
-  /// This method always returns DetallesCuentaObj if exist, otherwise returns null
+  /// This method always returns DetallesCuenta Obj if exist, otherwise returns null
   ///
-  /// Set preload to true if you want to load all fields related to child or parent
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
   ///
-  /// You can send certain field names with preloadFields parameter for preloading. For ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])
+  /// ex: toSingle(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: toSingle(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
   ///
   /// <returns>List<DetallesCuenta>
   Future<DetallesCuenta> toSingle(
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     _pagesize = 1;
     _buildParameters();
     final objFuture = _obj._mnDetallesCuenta.toList(qparams);
@@ -4548,12 +4930,23 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
       obj = DetallesCuenta.fromMap(data[0] as Map<String, dynamic>);
 
       // RELATIONSHIPS PRELOAD
-      if (preload) {
-        if (preloadFields == null || preloadFields.contains('plCuenta')) {
-          obj.plCuenta = obj.plCuenta ?? await obj.getCuenta();
+      if (preload || loadParents) {
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('cuentas.plCuenta') &&
+            (preloadFields == null ||
+                loadParents ||
+                preloadFields.contains('plCuenta'))) {
+          loadedFields.add('cuentas.plCuenta');
+          obj.plCuenta =
+              obj.plCuenta ?? await obj.getCuenta(loadParents: loadParents);
         }
-        if (preloadFields == null || preloadFields.contains('plCategoria')) {
-          obj.plCategoria = obj.plCategoria ?? await obj.getCategoria();
+        if (!loadedFields.contains('categorias.plCategoria') &&
+            (preloadFields == null ||
+                loadParents ||
+                preloadFields.contains('plCategoria'))) {
+          loadedFields.add('categorias.plCategoria');
+          obj.plCategoria = obj.plCategoria ??
+              await obj.getCategoria(loadParents: loadParents);
         }
       } // END RELATIONSHIPS PRELOAD
 
@@ -4563,7 +4956,7 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
     return obj;
   }
 
-  /// This method always returns int.
+  /// This method returns int.
   ///
   /// <returns>int
   Future<int> toCount(
@@ -4578,22 +4971,36 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
     return count;
   }
 
-  /// This method always returns List<DetallesCuenta>.
+  /// This method returns List<DetallesCuenta>.
   ///
-  /// Set preload to true if you want to load all fields related to child or parent
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
   ///
-  /// You can send certain field names with preloadFields parameter for preloading. For ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])
+  /// ex: toList(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
   ///
   /// <returns>List<DetallesCuenta>
   Future<List<DetallesCuenta>> toList(
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     final data = await toMapList();
     final List<DetallesCuenta> detallescuentasData =
-        await DetallesCuenta.fromMapList(data, preload: preload);
+        await DetallesCuenta.fromMapList(data,
+            preload: preload,
+            preloadFields: preloadFields,
+            loadParents: loadParents,
+            loadedFields: loadedFields);
     return detallescuentasData;
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   Future<String> toJson() async {
     final list = <dynamic>[];
     final data = await toList();
@@ -4603,7 +5010,7 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
     return json.encode(list);
   }
 
-  /// This method always returns Json String.
+  /// This method returns Json String.
   Future<String> toJsonWithChilds() async {
     final list = <dynamic>[];
     final data = await toList();
@@ -4613,7 +5020,7 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
     return json.encode(list);
   }
 
-  /// This method always returns List<dynamic>.
+  /// This method returns List<dynamic>.
   ///
   /// <returns>List<dynamic>
   Future<List<dynamic>> toMapList() async {
@@ -4679,7 +5086,7 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
     return items;
   }
 
-  /// This method always returns Primary Key List<int>.
+  /// This method returns Primary Key List<int>.
   /// <returns>List<int>
   Future<List<int>> toListPrimaryKey([bool buildParameters = true]) async {
     if (buildParameters) _buildParameters();
@@ -4698,8 +5105,7 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
   /// Returns List<dynamic> for selected columns. Use this method for 'groupBy' with min,max,avg..
   ///
   /// Sample usage: (see EXAMPLE 4.2 at https://github.com/hhtokpinar/sqfEntity#group-by)
-  Future<List<dynamic>> toListObject(
-      [VoidCallback Function(List<dynamic> o) listObject]) async {
+  Future<List<dynamic>> toListObject() async {
     _buildParameters();
 
     final objectFuture = _obj._mnDetallesCuenta.toList(qparams);
@@ -4709,9 +5115,6 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
     final int count = data.length;
     for (int i = 0; i < count; i++) {
       objectsData.add(data[i]);
-    }
-    if (listObject != null) {
-      listObject(objectsData);
     }
     return objectsData;
   }
@@ -4766,12 +5169,6 @@ class DetallesCuentaFields {
         _fMonto ?? SqlSyntax.setField(_fMonto, 'monto', DbType.real);
   }
 
-  static TableField _fSaldoEnFecha;
-  static TableField get saldoEnFecha {
-    return _fSaldoEnFecha = _fSaldoEnFecha ??
-        SqlSyntax.setField(_fSaldoEnFecha, 'saldoEnFecha', DbType.real);
-  }
-
   static TableField _fTipoTransaccion;
   static TableField get tipoTransaccion {
     return _fTipoTransaccion = _fTipoTransaccion ??
@@ -4803,9 +5200,14 @@ class DetallesCuentaFields {
 //region DetallesCuentaManager
 class DetallesCuentaManager extends SqfEntityProvider {
   DetallesCuentaManager()
-      : super(DbComplex(), tableName: _tableName, colId: _colId);
+      : super(DbComplex(),
+            tableName: _tableName,
+            primaryKeyList: _primaryKeyList,
+            whereStr: _whereStr);
   static String _tableName = 'detallesCuenta';
-  static String _colId = 'idDetalleCuenta';
+  //static String _colId = 'idDetalleCuenta';
+  static List<String> _primaryKeyList = ['idDetalleCuenta'];
+  static String _whereStr = 'idDetalleCuenta=?';
 }
 
 //endregion DetallesCuentaManager
@@ -4835,7 +5237,7 @@ class Meta {
     _setDefaultValues();
   }
   Meta.withId(
-      this.idMeta,
+      idMeta,
       this.descripcion,
       this.fechaInicio,
       this.fechaFin,
@@ -4848,7 +5250,7 @@ class Meta {
   }
   Meta.fromMap(Map<String, dynamic> o) {
     _setDefaultValues();
-    idMeta = o['idMeta'] as int;
+    idMeta = int.tryParse(o['idMeta'].toString());
     if (o['descripcion'] != null) descripcion = o['descripcion'] as String;
     if (o['fechaInicio'] != null) fechaInicio = o['fechaInicio'] as String;
     if (o['fechaFin'] != null) fechaFin = o['fechaFin'] as String;
@@ -4877,7 +5279,8 @@ class Meta {
   // end FIELDS (Meta)
 
 // COLLECTIONS & VIRTUALS (Meta)
-  /// to load children of items to this field, use preload parameter ex: toList(preload:true) or toSingle(preload:true)
+  /// to load children of items to this field, use preload parameter. Ex: toList(preload:true) or toSingle(preload:true) or getById(preload:true)
+  /// You can also specify this object into certain preload fields. Ex: toList(preload:true, preloadFields:['plDetallesMetas', 'plField2'..]) or so on..
   List<DetallesMeta> plDetallesMetas;
 
   /// get DetallesMeta(s) filtered by metasIdMeta=idMeta
@@ -4889,6 +5292,7 @@ class Meta {
         .equals(idMeta)
         .and;
   }
+
 // END COLLECTIONS & VIRTUALS (Meta)
 
   static const bool _softDeleteActivated = true;
@@ -4899,7 +5303,8 @@ class Meta {
   }
 
   // METHODS
-  Map<String, dynamic> toMap({bool forQuery = false, bool forJson = false}) {
+  Map<String, dynamic> toMap(
+      {bool forQuery = false, bool forJson = false, bool forView = false}) {
     final map = <String, dynamic>{};
     if (idMeta != null) {
       map['idMeta'] = idMeta;
@@ -4940,7 +5345,9 @@ class Meta {
   }
 
   Future<Map<String, dynamic>> toMapWithChilds(
-      [bool forQuery = false, bool forJson = false]) async {
+      [bool forQuery = false,
+      bool forJson = false,
+      bool forView = false]) async {
     final map = <String, dynamic>{};
     if (idMeta != null) {
       map['idMeta'] = idMeta;
@@ -4986,17 +5393,30 @@ class Meta {
     return map;
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   String toJson() {
     return json.encode(toMap(forJson: true));
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   Future<String> toJsonWithChilds() async {
     return json.encode(await toMapWithChilds(false, true));
   }
 
   List<dynamic> toArgs() {
+    return [
+      descripcion,
+      fechaInicio,
+      fechaFin,
+      montoInicial,
+      montoFinal,
+      color,
+      icono,
+      isDeleted
+    ];
+  }
+
+  List<dynamic> toArgsWithIds() {
     return [
       idMeta,
       descripcion,
@@ -5042,19 +5462,29 @@ class Meta {
     */
 
   static Future<List<Meta>> fromMapList(List<dynamic> data,
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     final List<Meta> objList = <Meta>[];
     for (final map in data) {
       final obj = Meta.fromMap(map as Map<String, dynamic>);
 
-      // RELATIONSHIPS PRELOAD
+      // RELATIONSHIPS PRELOAD CHILD
       if (preload) {
-        if (preloadFields == null ||
-            preloadFields.contains('plDetallesMetas')) {
-          obj.plDetallesMetas =
-              obj.plDetallesMetas ?? await obj.getDetallesMetas().toList();
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('metas.plDetallesMetas') &&
+            (preloadFields == null ||
+                preloadFields.contains('plDetallesMetas'))) {
+          loadedFields.add('metas.plDetallesMetas');
+          obj.plDetallesMetas = obj.plDetallesMetas ??
+              await obj.getDetallesMetas().toList(
+                  preload: preload,
+                  preloadFields: preloadFields,
+                  loadParents: false,
+                  loadedFields: loadedFields);
         }
-      } // END RELATIONSHIPS PRELOAD
+      } // END RELATIONSHIPS PRELOAD CHILD
 
       objList.add(obj);
     }
@@ -5062,16 +5492,50 @@ class Meta {
   }
 
   /// returns Meta by ID if exist, otherwise returns null
-  /// <param name='idMeta'>Primary Key Value</param>
+  ///
+  /// Primary Keys: int idMeta
+  ///
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
+  ///
+  /// ex: getById(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: getById(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
+  ///
   /// <returns>returns Meta if exist, otherwise returns null
-  Future<Meta> getById(int idmeta) async {
-    if (idmeta == null) {
+  Future<Meta> getById(int idMeta,
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
+    if (idMeta == null) {
       return null;
     }
     Meta obj;
-    final data = await _mnMeta.getById(idmeta);
+    final data = await _mnMeta.getById([idMeta]);
     if (data.length != 0) {
       obj = Meta.fromMap(data[0] as Map<String, dynamic>);
+
+      // RELATIONSHIPS PRELOAD CHILD
+      if (preload) {
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('metas.plDetallesMetas') &&
+            (preloadFields == null ||
+                preloadFields.contains('plDetallesMetas'))) {
+          loadedFields.add('metas.plDetallesMetas');
+          obj.plDetallesMetas = obj.plDetallesMetas ??
+              await obj.getDetallesMetas().toList(
+                  preload: preload,
+                  preloadFields: preloadFields,
+                  loadParents: false,
+                  loadedFields: loadedFields);
+        }
+      } // END RELATIONSHIPS PRELOAD CHILD
+
     } else {
       obj = null;
     }
@@ -5085,7 +5549,8 @@ class Meta {
     if (idMeta == null || idMeta == 0) {
       idMeta = await _mnMeta.insert(this);
     } else {
-      idMeta = await _upsert();
+      // idMeta= await _upsert(); // removed in sqfentity_gen 1.3.0+6
+      await _mnMeta.update(this);
     }
 
     return idMeta;
@@ -5103,20 +5568,23 @@ class Meta {
   /// saveAll method saves the sent List<Meta> as a bulk in one transaction
   ///
   /// Returns a <List<BoolResult>>
-  Future<List<BoolResult>> saveAll(List<Meta> metas) async {
-    final results = _mnMeta.saveAll(
-        'INSERT OR REPLACE INTO metas (idMeta,  descripcion, fechaInicio, fechaFin, montoInicial, montoFinal, color, icono,isDeleted)  VALUES (?,?,?,?,?,?,?,?,?)',
-        metas);
-    return results;
+  Future<List<dynamic>> saveAll(List<Meta> metas) async {
+    // final results = _mnMeta.saveAll('INSERT OR REPLACE INTO metas (idMeta,descripcion, fechaInicio, fechaFin, montoInicial, montoFinal, color, icono,isDeleted)  VALUES (?,?,?,?,?,?,?,?,?)',metas);
+    // return results; removed in sqfentity_gen 1.3.0+6
+    DbComplex().batchStart();
+    for (final obj in metas) {
+      await obj.save();
+    }
+    return DbComplex().batchCommit();
   }
 
   /// Updates if the record exists, otherwise adds a new row
 
   /// <returns>Returns idMeta
-  Future<int> _upsert() async {
+  Future<int> upsert() async {
     try {
       if (await _mnMeta.rawInsert(
-              'INSERT OR REPLACE INTO metas (idMeta,  descripcion, fechaInicio, fechaFin, montoInicial, montoFinal, color, icono,isDeleted)  VALUES (?,?,?,?,?,?,?,?,?)',
+              'INSERT OR REPLACE INTO metas (idMeta,descripcion, fechaInicio, fechaFin, montoInicial, montoFinal, color, icono,isDeleted)  VALUES (?,?,?,?,?,?,?,?,?)',
               [
                 idMeta,
                 descripcion,
@@ -5131,7 +5599,7 @@ class Meta {
           1) {
         saveResult = BoolResult(
             success: true,
-            successMessage: 'Meta idMeta=$idMeta updated successfuly');
+            successMessage: 'Meta idMeta=$idMeta updated successfully');
       } else {
         saveResult = BoolResult(
             success: false, errorMessage: 'Meta idMeta=$idMeta did not update');
@@ -5149,10 +5617,10 @@ class Meta {
   ///
   /// upsertAll() method is faster then saveAll() method. upsertAll() should be used when you are sure that the primary key is greater than zero
   ///
-  /// Returns a <List<BoolResult>>
-  Future<List<BoolResult>> upsertAll(List<Meta> metas) async {
+  /// Returns a BoolCommitResult
+  Future<BoolCommitResult> upsertAll(List<Meta> metas) async {
     final results = await _mnMeta.rawInsertAll(
-        'INSERT OR REPLACE INTO metas (idMeta,  descripcion, fechaInicio, fechaFin, montoInicial, montoFinal, color, icono,isDeleted)  VALUES (?,?,?,?,?,?,?,?,?)',
+        'INSERT OR REPLACE INTO metas (idMeta,descripcion, fechaInicio, fechaFin, montoInicial, montoFinal, color, icono,isDeleted)  VALUES (?,?,?,?,?,?,?,?,?)',
         metas);
     return results;
   }
@@ -5501,11 +5969,11 @@ class MetaFilterBuilder extends SearchCriteria {
   }
 
   /// String whereCriteria, write raw query without 'where' keyword. Like this: 'field1 like 'test%' and field2 = 3'
-  MetaFilterBuilder where(String whereCriteria) {
+  MetaFilterBuilder where(String whereCriteria, {dynamic parameterValue}) {
     if (whereCriteria != null && whereCriteria != '') {
       final DbParameter param = DbParameter();
-      _addedBlocks =
-          setCriteria(0, parameters, param, '($whereCriteria)', _addedBlocks);
+      _addedBlocks = setCriteria(parameterValue ?? 0, parameters, param,
+          '($whereCriteria)', _addedBlocks);
       _addedBlocks.needEndBlock[_blockIndex] = _addedBlocks.retVal;
     }
     return this;
@@ -5549,7 +6017,7 @@ class MetaFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         orderByList.add(argFields);
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') orderByList.add(' $s ');
         }
       }
@@ -5567,7 +6035,7 @@ class MetaFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         orderByList.add('$argFields desc ');
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') orderByList.add(' $s desc ');
         }
       }
@@ -5585,7 +6053,7 @@ class MetaFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         groupByList.add(' $argFields ');
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') groupByList.add(' $s ');
         }
       }
@@ -5695,15 +6163,15 @@ class MetaFilterBuilder extends SearchCriteria {
               break;
             default:
           }
-          if (param.value != null) {
-            whereArguments.add(param.value);
-          }
-          if (param.value2 != null) {
-            whereArguments.add(param.value2);
-          }
         }
       } else {
         whereString += param.whereString;
+      }
+      if (param.value != null) {
+        whereArguments.add(param.value);
+      }
+      if (param.value2 != null) {
+        whereArguments.add(param.value2);
       }
     }
     if (Meta._softDeleteActivated) {
@@ -5775,15 +6243,25 @@ class MetaFilterBuilder extends SearchCriteria {
     return _obj._mnMeta.updateBatch(qparams, values);
   }
 
-  /// This method always returns MetaObj if exist, otherwise returns null
+  /// This method always returns Meta Obj if exist, otherwise returns null
   ///
-  /// Set preload to true if you want to load all fields related to child or parent
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
   ///
-  /// You can send certain field names with preloadFields parameter for preloading. For ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])
+  /// ex: toSingle(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: toSingle(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
   ///
   /// <returns>List<Meta>
   Future<Meta> toSingle(
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     _pagesize = 1;
     _buildParameters();
     final objFuture = _obj._mnMeta.toList(qparams);
@@ -5792,14 +6270,21 @@ class MetaFilterBuilder extends SearchCriteria {
     if (data.isNotEmpty) {
       obj = Meta.fromMap(data[0] as Map<String, dynamic>);
 
-      // RELATIONSHIPS PRELOAD
+      // RELATIONSHIPS PRELOAD CHILD
       if (preload) {
-        if (preloadFields == null ||
-            preloadFields.contains('plDetallesMetas')) {
-          obj.plDetallesMetas =
-              obj.plDetallesMetas ?? await obj.getDetallesMetas().toList();
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('metas.plDetallesMetas') &&
+            (preloadFields == null ||
+                preloadFields.contains('plDetallesMetas'))) {
+          loadedFields.add('metas.plDetallesMetas');
+          obj.plDetallesMetas = obj.plDetallesMetas ??
+              await obj.getDetallesMetas().toList(
+                  preload: preload,
+                  preloadFields: preloadFields,
+                  loadParents: false,
+                  loadedFields: loadedFields);
         }
-      } // END RELATIONSHIPS PRELOAD
+      } // END RELATIONSHIPS PRELOAD CHILD
 
     } else {
       obj = null;
@@ -5807,7 +6292,7 @@ class MetaFilterBuilder extends SearchCriteria {
     return obj;
   }
 
-  /// This method always returns int.
+  /// This method returns int.
   ///
   /// <returns>int
   Future<int> toCount([VoidCallback Function(int c) metaCount]) async {
@@ -5821,21 +6306,35 @@ class MetaFilterBuilder extends SearchCriteria {
     return count;
   }
 
-  /// This method always returns List<Meta>.
+  /// This method returns List<Meta>.
   ///
-  /// Set preload to true if you want to load all fields related to child or parent
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
   ///
-  /// You can send certain field names with preloadFields parameter for preloading. For ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])
+  /// ex: toList(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
   ///
   /// <returns>List<Meta>
   Future<List<Meta>> toList(
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     final data = await toMapList();
-    final List<Meta> metasData = await Meta.fromMapList(data, preload: preload);
+    final List<Meta> metasData = await Meta.fromMapList(data,
+        preload: preload,
+        preloadFields: preloadFields,
+        loadParents: loadParents,
+        loadedFields: loadedFields);
     return metasData;
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   Future<String> toJson() async {
     final list = <dynamic>[];
     final data = await toList();
@@ -5845,7 +6344,7 @@ class MetaFilterBuilder extends SearchCriteria {
     return json.encode(list);
   }
 
-  /// This method always returns Json String.
+  /// This method returns Json String.
   Future<String> toJsonWithChilds() async {
     final list = <dynamic>[];
     final data = await toList();
@@ -5855,7 +6354,7 @@ class MetaFilterBuilder extends SearchCriteria {
     return json.encode(list);
   }
 
-  /// This method always returns List<dynamic>.
+  /// This method returns List<dynamic>.
   ///
   /// <returns>List<dynamic>
   Future<List<dynamic>> toMapList() async {
@@ -5919,7 +6418,7 @@ class MetaFilterBuilder extends SearchCriteria {
     return items;
   }
 
-  /// This method always returns Primary Key List<int>.
+  /// This method returns Primary Key List<int>.
   /// <returns>List<int>
   Future<List<int>> toListPrimaryKey([bool buildParameters = true]) async {
     if (buildParameters) _buildParameters();
@@ -5937,8 +6436,7 @@ class MetaFilterBuilder extends SearchCriteria {
   /// Returns List<dynamic> for selected columns. Use this method for 'groupBy' with min,max,avg..
   ///
   /// Sample usage: (see EXAMPLE 4.2 at https://github.com/hhtokpinar/sqfEntity#group-by)
-  Future<List<dynamic>> toListObject(
-      [VoidCallback Function(List<dynamic> o) listObject]) async {
+  Future<List<dynamic>> toListObject() async {
     _buildParameters();
 
     final objectFuture = _obj._mnMeta.toList(qparams);
@@ -5948,9 +6446,6 @@ class MetaFilterBuilder extends SearchCriteria {
     final int count = data.length;
     for (int i = 0; i < count; i++) {
       objectsData.add(data[i]);
-    }
-    if (listObject != null) {
-      listObject(objectsData);
     }
     return objectsData;
   }
@@ -6038,9 +6533,15 @@ class MetaFields {
 
 //region MetaManager
 class MetaManager extends SqfEntityProvider {
-  MetaManager() : super(DbComplex(), tableName: _tableName, colId: _colId);
+  MetaManager()
+      : super(DbComplex(),
+            tableName: _tableName,
+            primaryKeyList: _primaryKeyList,
+            whereStr: _whereStr);
   static String _tableName = 'metas';
-  static String _colId = 'idMeta';
+  //static String _colId = 'idMeta';
+  static List<String> _primaryKeyList = ['idMeta'];
+  static String _whereStr = 'idMeta=?';
 }
 
 //endregion MetaManager
@@ -6058,16 +6559,16 @@ class DetallesMeta {
       this.fecha, this.monto, this.metasIdMeta, this.isDeleted) {
     _setDefaultValues();
   }
-  DetallesMeta.withId(this.idDetalleMeta, this.fecha, this.monto,
-      this.metasIdMeta, this.isDeleted) {
+  DetallesMeta.withId(
+      idDetalleMeta, this.fecha, this.monto, this.metasIdMeta, this.isDeleted) {
     _setDefaultValues();
   }
   DetallesMeta.fromMap(Map<String, dynamic> o) {
     _setDefaultValues();
-    idDetalleMeta = o['idDetalleMeta'] as int;
+    idDetalleMeta = int.tryParse(o['idDetalleMeta'].toString());
     if (o['fecha'] != null) fecha = o['fecha'] as String;
     if (o['monto'] != null) monto = double.tryParse(o['monto'].toString());
-    metasIdMeta = o['metasIdMeta'] as int;
+    metasIdMeta = int.tryParse(o['metasIdMeta'].toString());
 
     isDeleted = o['isDeleted'] != null
         ? o['isDeleted'] == 1 || o['isDeleted'] == true
@@ -6090,12 +6591,13 @@ class DetallesMeta {
   // end FIELDS (DetallesMeta)
 
 // RELATIONSHIPS (DetallesMeta)
-  /// to load parent of items to this field, use preload parameter ex: toList(preload:true) or toSingle(preload:true)
+  /// to load parent of items to this field, use preload parameter ex: toList(preload:true) or toSingle(preload:true) or getById(preload:true)
+  /// You can also specify this object into certain preload fields. Ex: toList(preload:true, preloadFields:['plMeta', 'plField2'..]) or so on..
   Meta plMeta;
 
   /// get Meta By MetasIdMeta
-  Future<Meta> getMeta() async {
-    final _obj = await Meta().getById(metasIdMeta);
+  Future<Meta> getMeta({bool loadParents = false}) async {
+    final _obj = await Meta().getById(metasIdMeta, loadParents: loadParents);
     return _obj;
   }
   // END RELATIONSHIPS (DetallesMeta)
@@ -6108,7 +6610,8 @@ class DetallesMeta {
   }
 
   // METHODS
-  Map<String, dynamic> toMap({bool forQuery = false, bool forJson = false}) {
+  Map<String, dynamic> toMap(
+      {bool forQuery = false, bool forJson = false, bool forView = false}) {
     final map = <String, dynamic>{};
     if (idDetalleMeta != null) {
       map['idDetalleMeta'] = idDetalleMeta;
@@ -6122,7 +6625,7 @@ class DetallesMeta {
     }
 
     if (metasIdMeta != null) {
-      map['metasIdMeta'] = metasIdMeta;
+      map['metasIdMeta'] = forView ? plMeta.descripcion : metasIdMeta;
     }
 
     if (isDeleted != null) {
@@ -6133,7 +6636,9 @@ class DetallesMeta {
   }
 
   Future<Map<String, dynamic>> toMapWithChilds(
-      [bool forQuery = false, bool forJson = false]) async {
+      [bool forQuery = false,
+      bool forJson = false,
+      bool forView = false]) async {
     final map = <String, dynamic>{};
     if (idDetalleMeta != null) {
       map['idDetalleMeta'] = idDetalleMeta;
@@ -6147,7 +6652,7 @@ class DetallesMeta {
     }
 
     if (metasIdMeta != null) {
-      map['metasIdMeta'] = metasIdMeta;
+      map['metasIdMeta'] = forView ? plMeta.descripcion : metasIdMeta;
     }
 
     if (isDeleted != null) {
@@ -6157,17 +6662,21 @@ class DetallesMeta {
     return map;
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   String toJson() {
     return json.encode(toMap(forJson: true));
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   Future<String> toJsonWithChilds() async {
     return json.encode(await toMapWithChilds(false, true));
   }
 
   List<dynamic> toArgs() {
+    return [fecha, monto, metasIdMeta, isDeleted];
+  }
+
+  List<dynamic> toArgsWithIds() {
     return [idDetalleMeta, fecha, monto, metasIdMeta, isDeleted];
   }
 
@@ -6206,15 +6715,24 @@ class DetallesMeta {
     */
 
   static Future<List<DetallesMeta>> fromMapList(List<dynamic> data,
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     final List<DetallesMeta> objList = <DetallesMeta>[];
     for (final map in data) {
       final obj = DetallesMeta.fromMap(map as Map<String, dynamic>);
 
       // RELATIONSHIPS PRELOAD
-      if (preload) {
-        if (preloadFields == null || preloadFields.contains('plMeta')) {
-          obj.plMeta = obj.plMeta ?? await obj.getMeta();
+      if (preload || loadParents) {
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('metas.plMeta') &&
+            (preloadFields == null ||
+                loadParents ||
+                preloadFields.contains('plMeta'))) {
+          loadedFields.add('metas.plMeta');
+          obj.plMeta =
+              obj.plMeta ?? await obj.getMeta(loadParents: loadParents);
         }
       } // END RELATIONSHIPS PRELOAD
 
@@ -6224,16 +6742,47 @@ class DetallesMeta {
   }
 
   /// returns DetallesMeta by ID if exist, otherwise returns null
-  /// <param name='idDetalleMeta'>Primary Key Value</param>
+  ///
+  /// Primary Keys: int idDetalleMeta
+  ///
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
+  ///
+  /// ex: getById(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: getById(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
+  ///
   /// <returns>returns DetallesMeta if exist, otherwise returns null
-  Future<DetallesMeta> getById(int iddetallemeta) async {
-    if (iddetallemeta == null) {
+  Future<DetallesMeta> getById(int idDetalleMeta,
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
+    if (idDetalleMeta == null) {
       return null;
     }
     DetallesMeta obj;
-    final data = await _mnDetallesMeta.getById(iddetallemeta);
+    final data = await _mnDetallesMeta.getById([idDetalleMeta]);
     if (data.length != 0) {
       obj = DetallesMeta.fromMap(data[0] as Map<String, dynamic>);
+
+      // RELATIONSHIPS PRELOAD
+      if (preload || loadParents) {
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('metas.plMeta') &&
+            (preloadFields == null ||
+                loadParents ||
+                preloadFields.contains('plMeta'))) {
+          loadedFields.add('metas.plMeta');
+          obj.plMeta =
+              obj.plMeta ?? await obj.getMeta(loadParents: loadParents);
+        }
+      } // END RELATIONSHIPS PRELOAD
+
     } else {
       obj = null;
     }
@@ -6247,7 +6796,8 @@ class DetallesMeta {
     if (idDetalleMeta == null || idDetalleMeta == 0) {
       idDetalleMeta = await _mnDetallesMeta.insert(this);
     } else {
-      idDetalleMeta = await _upsert();
+      // idDetalleMeta= await _upsert(); // removed in sqfentity_gen 1.3.0+6
+      await _mnDetallesMeta.update(this);
     }
 
     return idDetalleMeta;
@@ -6265,26 +6815,29 @@ class DetallesMeta {
   /// saveAll method saves the sent List<DetallesMeta> as a bulk in one transaction
   ///
   /// Returns a <List<BoolResult>>
-  Future<List<BoolResult>> saveAll(List<DetallesMeta> detallesmetas) async {
-    final results = _mnDetallesMeta.saveAll(
-        'INSERT OR REPLACE INTO detallesMetas (idDetalleMeta,  fecha, monto, metasIdMeta,isDeleted)  VALUES (?,?,?,?,?)',
-        detallesmetas);
-    return results;
+  Future<List<dynamic>> saveAll(List<DetallesMeta> detallesmetas) async {
+    // final results = _mnDetallesMeta.saveAll('INSERT OR REPLACE INTO detallesMetas (idDetalleMeta,fecha, monto, metasIdMeta,isDeleted)  VALUES (?,?,?,?,?)',detallesmetas);
+    // return results; removed in sqfentity_gen 1.3.0+6
+    DbComplex().batchStart();
+    for (final obj in detallesmetas) {
+      await obj.save();
+    }
+    return DbComplex().batchCommit();
   }
 
   /// Updates if the record exists, otherwise adds a new row
 
   /// <returns>Returns idDetalleMeta
-  Future<int> _upsert() async {
+  Future<int> upsert() async {
     try {
       if (await _mnDetallesMeta.rawInsert(
-              'INSERT OR REPLACE INTO detallesMetas (idDetalleMeta,  fecha, monto, metasIdMeta,isDeleted)  VALUES (?,?,?,?,?)',
+              'INSERT OR REPLACE INTO detallesMetas (idDetalleMeta,fecha, monto, metasIdMeta,isDeleted)  VALUES (?,?,?,?,?)',
               [idDetalleMeta, fecha, monto, metasIdMeta, isDeleted]) ==
           1) {
         saveResult = BoolResult(
             success: true,
             successMessage:
-                'DetallesMeta idDetalleMeta=$idDetalleMeta updated successfuly');
+                'DetallesMeta idDetalleMeta=$idDetalleMeta updated successfully');
       } else {
         saveResult = BoolResult(
             success: false,
@@ -6304,10 +6857,10 @@ class DetallesMeta {
   ///
   /// upsertAll() method is faster then saveAll() method. upsertAll() should be used when you are sure that the primary key is greater than zero
   ///
-  /// Returns a <List<BoolResult>>
-  Future<List<BoolResult>> upsertAll(List<DetallesMeta> detallesmetas) async {
+  /// Returns a BoolCommitResult
+  Future<BoolCommitResult> upsertAll(List<DetallesMeta> detallesmetas) async {
     final results = await _mnDetallesMeta.rawInsertAll(
-        'INSERT OR REPLACE INTO detallesMetas (idDetalleMeta,  fecha, monto, metasIdMeta,isDeleted)  VALUES (?,?,?,?,?)',
+        'INSERT OR REPLACE INTO detallesMetas (idDetalleMeta,fecha, monto, metasIdMeta,isDeleted)  VALUES (?,?,?,?,?)',
         detallesmetas);
     return results;
   }
@@ -6652,11 +7205,12 @@ class DetallesMetaFilterBuilder extends SearchCriteria {
   }
 
   /// String whereCriteria, write raw query without 'where' keyword. Like this: 'field1 like 'test%' and field2 = 3'
-  DetallesMetaFilterBuilder where(String whereCriteria) {
+  DetallesMetaFilterBuilder where(String whereCriteria,
+      {dynamic parameterValue}) {
     if (whereCriteria != null && whereCriteria != '') {
       final DbParameter param = DbParameter();
-      _addedBlocks =
-          setCriteria(0, parameters, param, '($whereCriteria)', _addedBlocks);
+      _addedBlocks = setCriteria(parameterValue ?? 0, parameters, param,
+          '($whereCriteria)', _addedBlocks);
       _addedBlocks.needEndBlock[_blockIndex] = _addedBlocks.retVal;
     }
     return this;
@@ -6700,7 +7254,7 @@ class DetallesMetaFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         orderByList.add(argFields);
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') orderByList.add(' $s ');
         }
       }
@@ -6718,7 +7272,7 @@ class DetallesMetaFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         orderByList.add('$argFields desc ');
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') orderByList.add(' $s desc ');
         }
       }
@@ -6736,7 +7290,7 @@ class DetallesMetaFilterBuilder extends SearchCriteria {
       if (argFields is String) {
         groupByList.add(' $argFields ');
       } else {
-        for (String s in argFields) {
+        for (String s in argFields as List<String>) {
           if (s != null && s != '') groupByList.add(' $s ');
         }
       }
@@ -6828,15 +7382,15 @@ class DetallesMetaFilterBuilder extends SearchCriteria {
               break;
             default:
           }
-          if (param.value != null) {
-            whereArguments.add(param.value);
-          }
-          if (param.value2 != null) {
-            whereArguments.add(param.value2);
-          }
         }
       } else {
         whereString += param.whereString;
+      }
+      if (param.value != null) {
+        whereArguments.add(param.value);
+      }
+      if (param.value2 != null) {
+        whereArguments.add(param.value2);
       }
     }
     if (DetallesMeta._softDeleteActivated) {
@@ -6863,6 +7417,7 @@ class DetallesMetaFilterBuilder extends SearchCriteria {
   Future<BoolResult> delete([bool hardDelete = false]) async {
     _buildParameters();
     var r = BoolResult();
+
     if (DetallesMeta._softDeleteActivated && !hardDelete) {
       r = await _obj._mnDetallesMeta.updateBatch(qparams, {'isDeleted': 1});
     } else {
@@ -6892,15 +7447,25 @@ class DetallesMetaFilterBuilder extends SearchCriteria {
     return _obj._mnDetallesMeta.updateBatch(qparams, values);
   }
 
-  /// This method always returns DetallesMetaObj if exist, otherwise returns null
+  /// This method always returns DetallesMeta Obj if exist, otherwise returns null
   ///
-  /// Set preload to true if you want to load all fields related to child or parent
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
   ///
-  /// You can send certain field names with preloadFields parameter for preloading. For ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])
+  /// ex: toSingle(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: toSingle(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
   ///
   /// <returns>List<DetallesMeta>
   Future<DetallesMeta> toSingle(
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     _pagesize = 1;
     _buildParameters();
     final objFuture = _obj._mnDetallesMeta.toList(qparams);
@@ -6910,9 +7475,15 @@ class DetallesMetaFilterBuilder extends SearchCriteria {
       obj = DetallesMeta.fromMap(data[0] as Map<String, dynamic>);
 
       // RELATIONSHIPS PRELOAD
-      if (preload) {
-        if (preloadFields == null || preloadFields.contains('plMeta')) {
-          obj.plMeta = obj.plMeta ?? await obj.getMeta();
+      if (preload || loadParents) {
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('metas.plMeta') &&
+            (preloadFields == null ||
+                loadParents ||
+                preloadFields.contains('plMeta'))) {
+          loadedFields.add('metas.plMeta');
+          obj.plMeta =
+              obj.plMeta ?? await obj.getMeta(loadParents: loadParents);
         }
       } // END RELATIONSHIPS PRELOAD
 
@@ -6922,7 +7493,7 @@ class DetallesMetaFilterBuilder extends SearchCriteria {
     return obj;
   }
 
-  /// This method always returns int.
+  /// This method returns int.
   ///
   /// <returns>int
   Future<int> toCount([VoidCallback Function(int c) detallesmetaCount]) async {
@@ -6936,22 +7507,36 @@ class DetallesMetaFilterBuilder extends SearchCriteria {
     return count;
   }
 
-  /// This method always returns List<DetallesMeta>.
+  /// This method returns List<DetallesMeta>.
   ///
-  /// Set preload to true if you want to load all fields related to child or parent
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
   ///
-  /// You can send certain field names with preloadFields parameter for preloading. For ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])
+  /// ex: toList(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
   ///
   /// <returns>List<DetallesMeta>
   Future<List<DetallesMeta>> toList(
-      {bool preload = false, List<String> preloadFields}) async {
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
     final data = await toMapList();
-    final List<DetallesMeta> detallesmetasData =
-        await DetallesMeta.fromMapList(data, preload: preload);
+    final List<DetallesMeta> detallesmetasData = await DetallesMeta.fromMapList(
+        data,
+        preload: preload,
+        preloadFields: preloadFields,
+        loadParents: loadParents,
+        loadedFields: loadedFields);
     return detallesmetasData;
   }
 
-  /// This method always returns Json String
+  /// This method returns Json String
   Future<String> toJson() async {
     final list = <dynamic>[];
     final data = await toList();
@@ -6961,7 +7546,7 @@ class DetallesMetaFilterBuilder extends SearchCriteria {
     return json.encode(list);
   }
 
-  /// This method always returns Json String.
+  /// This method returns Json String.
   Future<String> toJsonWithChilds() async {
     final list = <dynamic>[];
     final data = await toList();
@@ -6971,7 +7556,7 @@ class DetallesMetaFilterBuilder extends SearchCriteria {
     return json.encode(list);
   }
 
-  /// This method always returns List<dynamic>.
+  /// This method returns List<dynamic>.
   ///
   /// <returns>List<dynamic>
   Future<List<dynamic>> toMapList() async {
@@ -7036,7 +7621,7 @@ class DetallesMetaFilterBuilder extends SearchCriteria {
     return items;
   }
 
-  /// This method always returns Primary Key List<int>.
+  /// This method returns Primary Key List<int>.
   /// <returns>List<int>
   Future<List<int>> toListPrimaryKey([bool buildParameters = true]) async {
     if (buildParameters) _buildParameters();
@@ -7054,8 +7639,7 @@ class DetallesMetaFilterBuilder extends SearchCriteria {
   /// Returns List<dynamic> for selected columns. Use this method for 'groupBy' with min,max,avg..
   ///
   /// Sample usage: (see EXAMPLE 4.2 at https://github.com/hhtokpinar/sqfEntity#group-by)
-  Future<List<dynamic>> toListObject(
-      [VoidCallback Function(List<dynamic> o) listObject]) async {
+  Future<List<dynamic>> toListObject() async {
     _buildParameters();
 
     final objectFuture = _obj._mnDetallesMeta.toList(qparams);
@@ -7065,9 +7649,6 @@ class DetallesMetaFilterBuilder extends SearchCriteria {
     final int count = data.length;
     for (int i = 0; i < count; i++) {
       objectsData.add(data[i]);
-    }
-    if (listObject != null) {
-      listObject(objectsData);
     }
     return objectsData;
   }
@@ -7132,9 +7713,14 @@ class DetallesMetaFields {
 //region DetallesMetaManager
 class DetallesMetaManager extends SqfEntityProvider {
   DetallesMetaManager()
-      : super(DbComplex(), tableName: _tableName, colId: _colId);
+      : super(DbComplex(),
+            tableName: _tableName,
+            primaryKeyList: _primaryKeyList,
+            whereStr: _whereStr);
   static String _tableName = 'detallesMetas';
-  static String _colId = 'idDetalleMeta';
+  //static String _colId = 'idDetalleMeta';
+  static List<String> _primaryKeyList = ['idDetalleMeta'];
+  static String _whereStr = 'idDetalleMeta=?';
 }
 
 //endregion DetallesMetaManager
@@ -7142,3 +7728,6 @@ class DbComplexSequenceManager extends SqfEntityProvider {
   DbComplexSequenceManager() : super(DbComplex());
 }
 // END OF ENTITIES
+
+// BEGIN CONTROLLERS
+// END OF CONTROLLERS
