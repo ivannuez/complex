@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:complex/widget/NotData.dart';
+import 'package:complex/constant/Librerias.dart';
+import 'package:complex/constant/Utils.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
-import 'package:animate_do/animate_do.dart';
-import 'package:complex/utils/UtilsColor.dart';
-import 'package:complex/utils/UtilsFormat.dart';
+
 
 class DonutChart extends StatelessWidget {
   final Future<List<Map<String, dynamic>>> list;
@@ -30,7 +31,7 @@ class DonutChart extends StatelessWidget {
               height: MediaQuery.of(context).size.height,
               width: MediaQuery.of(context).size.width,
               alignment: Alignment.center,
-              child: Text('Sin Datos..'),
+              child: NotData(),
             );
           } else {
             List<DataChart> data = new List<DataChart>();

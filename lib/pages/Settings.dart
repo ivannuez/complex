@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_icons/flutter_icons.dart';
-import 'package:complex/core/ICircularBottom.dart';
+import 'package:complex/constant/Widget.dart';
+import 'package:complex/constant/Librerias.dart';
 
 class Settings extends StatelessWidget {
   @override

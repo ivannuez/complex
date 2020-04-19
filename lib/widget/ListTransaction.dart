@@ -1,3 +1,4 @@
+import 'package:complex/widget/NotData.dart';
 import 'package:flutter/material.dart';
 import 'package:complex/widget/ItemTransaction.dart';
 import 'package:animate_do/animate_do.dart';
@@ -14,9 +15,15 @@ class ListTransaction extends StatelessWidget {
       builder: (context, detalleSnap) {
         if (detalleSnap.hasData == false ||
             (detalleSnap.data.length == null || detalleSnap.data.length == 0)) {
-          return Container();
+          return Container(
+            height: double.infinity,
+            width: double.infinity,
+            child: Center(
+              child: NotData(),
+            ),
+          );
         } else {
-           return FadeIn(
+          return FadeIn(
             duration: Duration(milliseconds: 400),
             child: ListView.builder(
               itemCount: detalleSnap.data.length,

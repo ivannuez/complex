@@ -1,16 +1,12 @@
-import 'package:complex/core/IListTile.dart';
-import 'package:complex/utils/UtilsFormat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:complex/providers/provider.dart';
-import 'package:intl/intl.dart';
-import 'package:intl/date_symbol_data_local.dart';
-import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:complex/constant/Widget.dart';
+import 'package:complex/constant/Librerias.dart';
+import 'package:complex/constant/Utils.dart';
+import 'package:complex/providers/provider.dart';
 import 'package:complex/model/model.dart';
-import 'package:complex/core/IHeader.dart';
-import 'package:complex/utils/NumericTextFormatter.dart';
 
 class PrincipalForm extends StatefulWidget {
   PrincipalForm({Key key, this.tipoForm, this.textForm, this.editing})
@@ -197,7 +193,7 @@ class _PrincipalFormState extends State<PrincipalForm> {
                                         ? Text('Categoria')
                                         : IListTile(
                                             color:
-                                                Color(selectedCategory.color),
+                                                MaterialColor(selectedCategory.color,null),
                                             descripcion:
                                                 selectedCategory.descripcion,
                                           )),
@@ -219,7 +215,7 @@ class _PrincipalFormState extends State<PrincipalForm> {
                                                 value: categoryItem,
                                                 child: IListTile(
                                                   color:
-                                                      Color(categoryItem.color),
+                                                      MaterialColor(categoryItem.color,null),
                                                   descripcion:
                                                       categoryItem.descripcion,
                                                 ),

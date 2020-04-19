@@ -1,7 +1,7 @@
-import 'package:complex/model/model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_material_color_picker/flutter_material_color_picker.dart';
-import 'package:complex/core/ICircularBottom.dart';
+import 'package:complex/constant/Widget.dart';
+import 'package:complex/model/model.dart';
 
 class CategoryView extends StatefulWidget {
   CategoryView({Key key}) : super(key: key);

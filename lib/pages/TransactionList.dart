@@ -1,17 +1,13 @@
-import 'dart:collection';
-import 'package:complex/pages/PrincipalForm.dart';
-import 'package:complex/widget/PopapDate.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:intl/date_symbol_data_local.dart';
+import 'dart:collection';
 import 'package:provider/provider.dart';
+import 'package:complex/constant/Librerias.dart';
+import 'package:complex/constant/Pages.dart';
+import 'package:complex/constant/Widget.dart';
+import 'package:complex/constant/Utils.dart';
 import 'package:complex/providers/provider.dart';
-import 'package:complex/widget/ListTransaction.dart';
-import 'package:complex/widget/ItemTransaction.dart';
 import 'package:complex/model/model.dart';
-import 'package:complex/utils/UtilsFormat.dart';
-import 'package:complex/core/ICircularBottom.dart';
-import 'package:animate_do/animate_do.dart';
+
 
 class TransactionList extends StatefulWidget {
   TransactionList({Key key, this.tipoForm, this.textForm}) : super(key: key);
@@ -24,9 +20,20 @@ class TransactionList extends StatefulWidget {
 }
 
 class _TransactionListState extends State<TransactionList> {
+  String fecha;
+
   void initState() {
     super.initState();
     initializeDateFormatting('es', null);
+    fecha = (new DateFormat("yyyy-MM").format(new DateTime.now()));
+  }
+
+  void updateFecha(String dato) {
+    if (dato.isNotEmpty) {
+      setState(() {
+        fecha = dato;
+      });
+    }
   }
 
   @override
@@ -52,7 +59,10 @@ class _TransactionListState extends State<TransactionList> {
           preferredSize: const Size.fromHeight(60.0),
           child: Column(
             children: <Widget>[
-              PopapDate(),
+              PopapDate(
+                date: DateTime.parse(fecha + "-01"),
+                onPress: updateFecha,
+              ),
               SizedBox(
                 height: 15,
               ),
@@ -212,7 +222,7 @@ class _TransactionListState extends State<TransactionList> {
         .equals(mainProvider.cuentaId)
         .and
         .fecha
-        .startsWith(mainProvider.mesActualTransaction)
+        .startsWith(fecha)
         .orderByDesc("fecha")
         .toList();
 
@@ -239,7 +249,7 @@ class _TransactionListState extends State<TransactionList> {
         .equals((mainProvider.cuentaId == null ? 1 : mainProvider.cuentaId))
         .and
         .fecha
-        .startsWith(mainProvider.mesActualTransaction)
+        .startsWith(fecha)
         .orderByDesc("fecha")
         .toList();
 

@@ -1,19 +1,13 @@
-import 'package:complex/core/BuildSpeedDial.dart';
-import 'package:complex/core/CurvePainter.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_icons/flutter_icons.dart';
-import 'package:animate_do/animate_do.dart';
-import 'package:provider/provider.dart';
-import 'package:complex/pages/Settings.dart';
-import 'package:complex/pages/TransactionList.dart';
-import 'package:complex/pages/Statistics.dart';
-import 'package:complex/widget/PopapDate.dart';
 import 'package:complex/providers/provider.dart';
-import 'package:complex/charts/DonutChart.dart';
-import 'package:complex/charts/TimeLineChar.dart';
 import 'package:complex/model/model.dart';
-import 'package:complex/utils/UtilsFormat.dart';
+import 'package:complex/constant/Widget.dart';
+import 'package:complex/constant/Librerias.dart';
+import 'package:complex/constant/Charts.dart';
 import 'package:complex/constant/Querys.dart';
+import 'package:complex/constant/Utils.dart';
+import 'package:complex/constant/Pages.dart';
+
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key}) : super(key: key);
@@ -25,6 +19,22 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
   bool dialVisible = true;
+  String fecha;
+
+  @override
+  void initState() {
+    super.initState();
+    initializeDateFormatting('es', null);
+    fecha = (new DateFormat("yyyy-MM").format(new DateTime.now()));
+  }
+
+  void updateFecha(String dato) {
+    if (dato.isNotEmpty) {
+      setState(() {
+        fecha = dato;
+      });
+    }
+  }
 
   Future<List<Map<String, dynamic>>> gastosCategoria(String fecha) async {
     List<Map<String, dynamic>> data =
@@ -150,7 +160,10 @@ class _MyHomePageState extends State<MyHomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                PopapDate(),
+                PopapDate(
+                  date: DateTime.parse(fecha + "-01"),
+                  onPress: updateFecha,
+                ),
                 SizedBox(
                   height: 10,
                 ),
@@ -231,7 +244,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget gastosPorCategoria() {
-    var mainProvider = Provider.of<MainProvider>(context);
     return FadeIn(
       duration: Duration(milliseconds: 400),
       child: Card(
@@ -260,8 +272,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   width: double.infinity,
                   margin: EdgeInsets.only(top: 10),
                   padding: EdgeInsets.only(left: 10),
-                  child: DonutChart(
-                      gastosCategoria(mainProvider.mesActualTransaction)),
+                  child: DonutChart(gastosCategoria(fecha)),
                 )
               ],
             ),
@@ -272,7 +283,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget frecuenciaDeGastos() {
-    var mainProvider = Provider.of<MainProvider>(context);
     return FadeIn(
       duration: Duration(milliseconds: 400),
       child: Card(
@@ -297,8 +307,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 height: 170,
                 width: double.infinity,
                 padding: EdgeInsets.only(left: 10, right: 10),
-                child: TimeLineChar(
-                    historialGastos(mainProvider.mesActualTransaction)),
+                child: TimeLineChar(historialGastos(fecha)),
               ),
             ],
           ),
@@ -328,7 +337,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 style: Theme.of(context).textTheme.subtitle,
               ),
               Divider(),
-              Container(),
+              Expanded(
+                child: Container(
+                  height: double.infinity,
+                  width: double.infinity,
+                  child: NotData(),
+                ),
+              ),
             ],
           ),
         ),
@@ -336,7 +351,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Color _appBarColor(int index) {
+  MaterialColor _appBarColor(int index) {
     if (index == 0) {
       return Colors.blue;
     } else {

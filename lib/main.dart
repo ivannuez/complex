@@ -1,16 +1,12 @@
+
 import 'package:flutter/material.dart';
 import "dart:async";
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
-import 'package:complex/providers/provider.dart';
-import 'package:complex/pages/MyHomePage.dart';
-import 'package:complex/pages/PrincipalForm.dart';
-import 'package:complex/pages/TransactionList.dart';
-import 'package:complex/pages/Settings.dart';
-import 'package:complex/pages/CategoryView.dart';
 import 'package:splashscreen/splashscreen.dart';
 import 'package:complex/model/model.dart';
-import 'package:complex/core/ThemeData.dart';
+import 'package:complex/providers/provider.dart';
+import 'package:complex/constant/Librerias.dart';
+import 'package:complex/constant/Pages.dart';
+import 'package:complex/widget/ThemeData.dart';
 
 void main() => runApp(MyApp());
 
@@ -18,12 +14,13 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-        return ChangeNotifierProvider(
-          create: (context) => MainProvider(),
-          child: MaterialApp(
-            debugShowCheckedModeBanner: false,
-            title: 'Control Cash',
-            theme: themeData,
+    Intl.defaultLocale = 'es';
+    return ChangeNotifierProvider(
+      create: (context) => MainProvider(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Complex',
+        theme: themeData,
         initialRoute: '/',
         routes: {
           '/': (context) => ScreenSplash(),
@@ -32,7 +29,12 @@ class MyApp extends StatelessWidget {
                 tipoForm: 'T',
                 textForm: 'Transacciones',
               ),
-          '/principalForm': (context) => PrincipalForm(),
+          '/principalForm': (context) => PrincipalForm(
+                tipoForm: 'E',
+                textForm: 'Gasto',
+                editing: false,
+              ),
+          '/statistics': (context) => Statistics(),
           '/settings': (context) => Settings(),
           '/settings/category': (context) => CategoryView(),
         },
@@ -57,8 +59,6 @@ class _ScreenSplashState extends State<ScreenSplash> {
   getDataInit() async {
     try {
       var mainProvider = Provider.of<MainProvider>(context, listen: false);
-      mainProvider.mesActualHome = (new DateFormat("yyyy-MM").format(new DateTime.now()));
-      mainProvider.mesActualTransaction = (new DateFormat("yyyy-MM").format(new DateTime.now()));
 
       final usuarios = await Usuario().select().toList();
       if (usuarios.length <= 0) {
@@ -189,7 +189,8 @@ class _ScreenSplashState extends State<ScreenSplash> {
   Widget build(BuildContext context) {
     return new SplashScreen(
       seconds: 1,
-      navigateAfterSeconds: new MyHomePage(),
+      navigateAfterSeconds: MyHomePage(),
+      //navigateAfterSeconds: Desingned(),
       image: new Image.asset('assets/images/icono-app.png'),
       backgroundColor: Colors.white,
       styleTextUnderTheLoader: new TextStyle(),
