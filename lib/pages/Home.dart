@@ -6,19 +6,15 @@ import 'package:complex/constant/Librerias.dart';
 import 'package:complex/constant/Charts.dart';
 import 'package:complex/constant/Querys.dart';
 import 'package:complex/constant/Utils.dart';
-import 'package:complex/constant/Pages.dart';
 
-
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key}) : super(key: key);
+class Home extends StatefulWidget {
+  Home({Key key}) : super(key: key);
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _HomeState createState() => _HomeState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _selectedIndex = 0;
-  bool dialVisible = true;
+class _HomeState extends State<Home> {
   String fecha;
 
   @override
@@ -51,99 +47,32 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _appBarColor(_selectedIndex),
       body: Container(
-        child: SafeArea(
-          child: Container(
-            height: MediaQuery.of(context).size.height,
-            color: Colors.grey[50],
-            child: _widgetOptions(_selectedIndex),
+        color: Colors.white,
+        child: SingleChildScrollView(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: <Widget>[
+                header(),
+                gastosPorCategoria(),
+                SizedBox(
+                  height: 20.0,
+                ),
+                frecuenciaDeGastos(),
+                SizedBox(
+                  height: 20.0,
+                ),
+                metas(),
+                SizedBox(
+                  height: 20.0,
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      floatingActionButton:
-          BuildSpeedDial(dialVisible: dialVisible, context: context),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.blue,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white,
-        showUnselectedLabels: false,
-        onTap: _onItemTapped,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(MaterialCommunityIcons.home),
-            title: Text('Inicio'),
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(MaterialCommunityIcons.format_list_bulleted_square),
-            title: Text('Transacciones'),
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(AntDesign.barchart),
-            title: Text('Estadisticas'),
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Ionicons.ios_options),
-            title: Text('Opciones'),
-          ),
-        ],
-      ),
     );
-  }
-
-  Widget _widgetOptions(int index) {
-    switch (index) {
-      case 0:
-        {
-          return SingleChildScrollView(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: <Widget>[
-                  header(),
-                  gastosPorCategoria(),
-                  SizedBox(
-                    height: 20.0,
-                  ),
-                  frecuenciaDeGastos(),
-                  SizedBox(
-                    height: 20.0,
-                  ),
-                  metas(),
-                  SizedBox(
-                    height: 20.0,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-      case 1:
-        {
-          return TransactionList(
-            tipoForm: 'T',
-            textForm: 'Transacciones',
-          );
-        }
-      case 2:
-        {
-          return Statistics();
-        }
-      case 3:
-        {
-          return Settings();
-        }
-    }
-    return Container();
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-      dialVisible = (index == 0 ? true : false);
-    });
   }
 
   Widget header() {
@@ -341,7 +270,28 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Container(
                   height: double.infinity,
                   width: double.infinity,
-                  child: NotData(),
+                  child: NotData(
+                    child: FlatButton(
+                      textColor: Colors.blue,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10))),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Icon(Icons.add),
+                          SizedBox(
+                            width: 10,
+                          ),
+                          Text('Metas'),
+                          SizedBox(
+                            width: 25,
+                          ),
+                        ],
+                      ),
+                      onPressed: () {},
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -349,19 +299,5 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
     );
-  }
-
-  MaterialColor _appBarColor(int index) {
-    if (index == 0) {
-      return Colors.blue;
-    } else {
-      return Colors.blue;
-    }
-  }
-
-  void setDialVisible(bool value) {
-    setState(() {
-      dialVisible = value;
-    });
   }
 }

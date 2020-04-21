@@ -46,10 +46,10 @@ class _PrincipalFormState extends State<PrincipalForm> {
     super.dispose();
   }
 
-  void setData(DetallesCuenta detallesCuenta) {
-    current = detallesCuenta;
+  void setData(DetallesCuenta selected) {
+    current = selected;
     montoAnterior = current.monto;
-    detallesCuenta.getCategoria().then((value) {
+    selected.getCategoria().then((value) {
       setState(() {
         selectedCategory = value;
       });

@@ -13,26 +13,34 @@ class ListTransaction extends StatelessWidget {
     return FutureBuilder(
       future: list,
       builder: (context, detalleSnap) {
-        if (detalleSnap.hasData == false ||
-            (detalleSnap.data.length == null || detalleSnap.data.length == 0)) {
+        if (detalleSnap.connectionState == ConnectionState.waiting) {
           return Container(
-            height: double.infinity,
-            width: double.infinity,
-            child: Center(
-              child: NotData(),
-            ),
+            height: MediaQuery.of(context).size.height,
+            width: MediaQuery.of(context).size.width,
+            alignment: Alignment.center,
+            child: CircularProgressIndicator(),
           );
         } else {
-          return FadeIn(
-            duration: Duration(milliseconds: 400),
-            child: ListView.builder(
-              itemCount: detalleSnap.data.length,
-              itemBuilder: (context, index) {
-                ItemTransaction detalle = detalleSnap.data[index];
-                return detalle;
-              },
-            ),
-          );
+          if (detalleSnap.data == null || detalleSnap.data.isEmpty) {
+            return Container(
+              color: Colors.white,
+              height: MediaQuery.of(context).size.height,
+              width: MediaQuery.of(context).size.width,
+              alignment: Alignment.center,
+              child: NotData(),
+            );
+          } else {
+            return FadeIn(
+              duration: Duration(milliseconds: 400),
+              child: ListView.builder(
+                itemCount: detalleSnap.data.length,
+                itemBuilder: (context, index) {
+                  ItemTransaction detalle = detalleSnap.data[index];
+                  return detalle;
+                },
+              ),
+            );
+          }
         }
       },
     );
