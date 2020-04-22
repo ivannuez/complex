@@ -6,7 +6,7 @@ import 'package:animate_do/animate_do.dart';
 class ListTransaction extends StatelessWidget {
   final Future<List<ItemTransaction>> list;
 
-  ListTransaction({Key key, this.list}) : super(key: key);
+  ListTransaction({this.list});
 
   @override
   Widget build(BuildContext context) {

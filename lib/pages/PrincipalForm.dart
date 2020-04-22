@@ -28,6 +28,8 @@ class _PrincipalFormState extends State<PrincipalForm> {
   List<Categoria> categorias;
   double montoAnterior = 0;
 
+  bool procesando = false;
+
   @override
   void initState() {
     super.initState();
@@ -192,8 +194,8 @@ class _PrincipalFormState extends State<PrincipalForm> {
                                     hint: (selectedCategory == null
                                         ? Text('Categoria')
                                         : IListTile(
-                                            color:
-                                                MaterialColor(selectedCategory.color,null),
+                                            color: MaterialColor(
+                                                selectedCategory.color, null),
                                             descripcion:
                                                 selectedCategory.descripcion,
                                           )),
@@ -214,8 +216,8 @@ class _PrincipalFormState extends State<PrincipalForm> {
                                                   DropdownMenuItem<Categoria>(
                                                 value: categoryItem,
                                                 child: IListTile(
-                                                  color:
-                                                      MaterialColor(categoryItem.color,null),
+                                                  color: MaterialColor(
+                                                      categoryItem.color, null),
                                                   descripcion:
                                                       categoryItem.descripcion,
                                                 ),
@@ -261,10 +263,12 @@ class _PrincipalFormState extends State<PrincipalForm> {
         context: context,
         dialogType: DialogType.INFO,
         animType: AnimType.BOTTOMSLIDE,
-        tittle: widget.textForm,
-        desc: '¿Guardar?',
+        body: (!procesando ? Text('¿Guardar?') : CircularProgressIndicator()),
         btnCancelOnPress: () {},
         btnOkOnPress: () async {
+          setState(() {
+            procesando = true;
+          });
           final cuentaActual = await Cuenta()
               .select()
               .idCuenta
@@ -299,7 +303,6 @@ class _PrincipalFormState extends State<PrincipalForm> {
                 } else {
                   campo = cuentaActual.totalIngreso - montoNuevo;
                 }
-                mainProvider.updateIngreso(campo.toInt(), saldo.toInt());
               } else {
                 field = 'totalEgreso';
                 if (action == 'sumar') {
@@ -307,7 +310,6 @@ class _PrincipalFormState extends State<PrincipalForm> {
                 } else {
                   campo = cuentaActual.totalEgreso - montoNuevo;
                 }
-                mainProvider.updateEgreso(campo.toInt(), saldo.toInt());
               }
             } else {
               if (widget.tipoForm == 'I') {
@@ -318,7 +320,6 @@ class _PrincipalFormState extends State<PrincipalForm> {
                     current.monto;
                 saldo = (cuentaActual.saldo == null ? 0 : cuentaActual.saldo) +
                     current.monto;
-                mainProvider.updateIngreso(campo.toInt(), saldo.toInt());
               } else {
                 field = 'totalEgreso';
                 campo = (cuentaActual.totalEgreso == null
@@ -327,12 +328,37 @@ class _PrincipalFormState extends State<PrincipalForm> {
                     current.monto;
                 saldo = (cuentaActual.saldo == null ? 0 : cuentaActual.saldo) -
                     current.monto;
-                mainProvider.updateEgreso(campo.toInt(), saldo.toInt());
               }
             }
             final sql =
                 "UPDATE cuentas set ${field} = ${campo}, saldo = ${saldo} where idCuenta = ${cuentaActual.idCuenta}";
             await DbComplex().execSQL(sql);
+
+            // Actualizamos la tabla de Saldos
+            if (widget.editing) {
+              double nuevoSaldo = 0;
+              final ultimoSaldo = await Saldo()
+                  .select()
+                  .fecha
+                  .startsWith(current.fecha.substring(0, 7))
+                  .orderBy("fecha")
+                  .toSingle();
+              if (action == 'sumar') {
+                nuevoSaldo = ultimoSaldo.monto + montoNuevo;
+                ultimoSaldo.monto = nuevoSaldo;
+                ultimoSaldo.save();
+              } else {
+                nuevoSaldo = ultimoSaldo.monto - montoNuevo;
+                ultimoSaldo.monto = nuevoSaldo;
+                ultimoSaldo.save();
+              }
+            } else {
+              await Saldo(
+                      cuentasIdCuenta: cuentaActual.idCuenta,
+                      fecha: current.fecha,
+                      monto: saldo)
+                  .save();
+            }
           } else {
             print('no guardado');
           }
@@ -371,16 +397,33 @@ class _PrincipalFormState extends State<PrincipalForm> {
             field = 'totalIngreso';
             campo = cuentaActual.totalIngreso - current.monto;
             saldo = campo - cuentaActual.totalEgreso;
-            mainProvider.updateIngreso(campo.toInt(), saldo.toInt());
           } else {
             field = 'totalEgreso';
             campo = cuentaActual.totalEgreso - current.monto;
             saldo = cuentaActual.totalIngreso - campo;
-            mainProvider.updateEgreso(campo.toInt(), saldo.toInt());
           }
           final sql =
               "UPDATE cuentas set ${field} = ${campo}, saldo = ${saldo} where idCuenta = ${cuentaActual.idCuenta}";
           await DbComplex().execSQL(sql);
+
+          //Actualizamos la tabla de Saldos
+          double nuevoSaldo = 0;
+          final ultimoSaldo = await Saldo()
+              .select()
+              .fecha
+              .startsWith(current.fecha.substring(0, 7))
+              .orderBy("fecha")
+              .toSingle();
+
+          if (widget.tipoForm == 'I') {
+            nuevoSaldo = ultimoSaldo.monto - current.monto;
+            ultimoSaldo.monto = nuevoSaldo;
+            ultimoSaldo.save();
+          } else {
+            nuevoSaldo = ultimoSaldo.monto + current.monto;
+            ultimoSaldo.monto = nuevoSaldo;
+            ultimoSaldo.save();
+          }
         } else {
           print('no se pudo borrar : ${result.errorMessage}');
         }

@@ -12,14 +12,12 @@ const grupos = SqfEntityTable(
   tableName: 'grupos',
   primaryKeyName: 'idGrupo',
   primaryKeyType: PrimaryKeyType.integer_auto_incremental,
-  useSoftDeleting: true,
+  useSoftDeleting: false,
   fields: [
     SqfEntityField('descripcion', DbType.text),
   ],
 );
 */
-
-
 
 /*
 const usuariosGrupos = SqfEntityTable(
@@ -43,39 +41,17 @@ const usuarios = SqfEntityTable(
   tableName: 'usuarios',
   primaryKeyName: 'idUsuario',
   primaryKeyType: PrimaryKeyType.integer_auto_incremental,
-  useSoftDeleting: true,
+  useSoftDeleting: false,
   fields: [
     SqfEntityField('nombre', DbType.text),
   ],
 );
 
-/*const colores = SqfEntityTable(
-  tableName: 'colores',
-  primaryKeyName: 'idColor',
-  primaryKeyType: PrimaryKeyType.integer_auto_incremental,
-  useSoftDeleting: true,
-  fields: [
-    SqfEntityField('descripcion', DbType.text),
-    SqfEntityField('valor', DbType.text),
-  ],
-);*/
-
-/*const iconos = SqfEntityTable(
-  tableName: 'iconos',
-  primaryKeyName: 'idIcono',
-  primaryKeyType: PrimaryKeyType.integer_auto_incremental,
-  useSoftDeleting: true,
-  fields: [
-    SqfEntityField('descripcion', DbType.text),
-    SqfEntityField('valor', DbType.text),
-  ],
-);*/
-
 const categorias = SqfEntityTable(
   tableName: 'categorias',
   primaryKeyName: 'idCategoria',
   primaryKeyType: PrimaryKeyType.integer_auto_incremental,
-  useSoftDeleting: true,
+  useSoftDeleting: false,
   fields: [
     SqfEntityField('descripcion', DbType.text),
     SqfEntityField('color', DbType.integer, defaultValue: 0),
@@ -88,7 +64,7 @@ const cuentas = SqfEntityTable(
   tableName: 'cuentas',
   primaryKeyName: 'idCuenta',
   primaryKeyType: PrimaryKeyType.integer_auto_incremental,
-  useSoftDeleting: true,
+  useSoftDeleting: false,
   fields: [
     SqfEntityField('descripcion', DbType.text),
     SqfEntityField('saldo', DbType.real, defaultValue: 0),
@@ -105,7 +81,7 @@ const detallesCuenta = SqfEntityTable(
   tableName: 'detallesCuenta',
   primaryKeyName: 'idDetalleCuenta',
   primaryKeyType: PrimaryKeyType.integer_auto_incremental,
-  useSoftDeleting: true,
+  useSoftDeleting: false,
   fields: [
     SqfEntityField('descripcion', DbType.text),
     SqfEntityField('fecha', DbType.text),
@@ -122,13 +98,26 @@ const detallesCuenta = SqfEntityTable(
   ],
 );
 
-
+const saldos = SqfEntityTable(
+  tableName: 'saldos',
+  primaryKeyName: 'idSaldo',
+  primaryKeyType: PrimaryKeyType.integer_auto_incremental,
+  useSoftDeleting: false,
+  fields: [
+    SqfEntityField('fecha', DbType.text),
+    SqfEntityField('monto', DbType.real, defaultValue: 0),
+    SqfEntityFieldRelationship(
+        parentTable: cuentas,
+        deleteRule: DeleteRule.CASCADE,
+        defaultValue: '0'),
+  ],
+);
 
 const metas = SqfEntityTable(
   tableName: 'metas',
   primaryKeyName: 'idMeta',
   primaryKeyType: PrimaryKeyType.integer_auto_incremental,
-  useSoftDeleting: true,
+  useSoftDeleting: false,
   fields: [
     SqfEntityField('descripcion', DbType.text),
     SqfEntityField('fechaInicio', DbType.text),
@@ -144,14 +133,12 @@ const detallesMetas = SqfEntityTable(
   tableName: 'detallesMetas',
   primaryKeyName: 'idDetalleMeta',
   primaryKeyType: PrimaryKeyType.integer_auto_incremental,
-  useSoftDeleting: true,
+  useSoftDeleting: false,
   fields: [
     SqfEntityField('fecha', DbType.text),
     SqfEntityField('monto', DbType.real, defaultValue: 0),
     SqfEntityFieldRelationship(
-        parentTable: metas,
-        deleteRule: DeleteRule.CASCADE,
-        defaultValue: '0'),
+        parentTable: metas, deleteRule: DeleteRule.CASCADE, defaultValue: '0'),
   ],
 );
 
@@ -159,5 +146,13 @@ const detallesMetas = SqfEntityTable(
 const myDbModel = SqfEntityModel(
     modelName: 'DbComplex', // optional
     databaseName: 'complex.db',
-    databaseTables: [usuarios,categorias,cuentas,detallesCuenta,metas,detallesMetas],
+    databaseTables: [
+      usuarios,
+      categorias,
+      cuentas,
+      detallesCuenta,
+      saldos,
+      metas,
+      detallesMetas
+    ],
     bundledDatabasePath: null);

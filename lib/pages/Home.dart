@@ -1,11 +1,11 @@
+import 'package:complex/widget/HeaderHome.dart';
 import 'package:flutter/material.dart';
 import 'package:complex/providers/provider.dart';
-import 'package:complex/model/model.dart';
 import 'package:complex/constant/Widget.dart';
 import 'package:complex/constant/Librerias.dart';
 import 'package:complex/constant/Charts.dart';
-import 'package:complex/constant/Querys.dart';
 import 'package:complex/constant/Utils.dart';
+import 'package:complex/model/facade.dart';
 
 class Home extends StatefulWidget {
   Home({Key key}) : super(key: key);
@@ -30,18 +30,6 @@ class _HomeState extends State<Home> {
         fecha = dato;
       });
     }
-  }
-
-  Future<List<Map<String, dynamic>>> gastosCategoria(String fecha) async {
-    List<Map<String, dynamic>> data =
-        await DbComplex().execDataTable(Querys.gastosCategoria(fecha));
-    return data;
-  }
-
-  Future<List<Map<String, dynamic>>> historialGastos(String fecha) async {
-    List<Map<String, dynamic>> data =
-        await DbComplex().execDataTable(Querys.historialGastos(fecha));
-    return data;
   }
 
   @override
@@ -96,74 +84,9 @@ class _HomeState extends State<Home> {
                 SizedBox(
                   height: 10,
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Text(
-                      'Saldo Actual:',
-                      style: Theme.of(context).textTheme.title,
-                    ),
-                    SizedBox(
-                      width: 20,
-                    ),
-                    Consumer<MainProvider>(
-                      builder: (_, snapshot, __) {
-                        return Text(
-                          "Gs. " + UtilsFormat.formatNumber(snapshot.saldo),
-                          style: Theme.of(context).textTheme.title.copyWith(
-                                fontWeight: FontWeight.normal,
-                              ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  children: <Widget>[
-                    Text(
-                      'Ingresos:',
-                      style: Theme.of(context).textTheme.title,
-                    ),
-                    Spacer(),
-                    Consumer<MainProvider>(
-                      builder: (_, snapshot, __) {
-                        return Text(
-                          "Gs. " +
-                              UtilsFormat.formatNumber(snapshot.ingresoTotal),
-                          style: Theme.of(context).textTheme.title.copyWith(
-                                fontWeight: FontWeight.normal,
-                              ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  children: <Widget>[
-                    Text(
-                      'Egresos:',
-                      style: Theme.of(context).textTheme.title,
-                    ),
-                    Spacer(),
-                    Consumer<MainProvider>(
-                      builder: (_, snapshot, __) {
-                        return Text(
-                          "Gs. " +
-                              UtilsFormat.formatNumber(snapshot.egresoTotal),
-                          style: Theme.of(context).textTheme.title.copyWith(
-                                fontWeight: FontWeight.normal,
-                              ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
+                HeaderHome(
+                  list: Facade.cuentaSaldo(fecha),
+                )
               ],
             ),
           ),
@@ -201,7 +124,7 @@ class _HomeState extends State<Home> {
                   width: double.infinity,
                   margin: EdgeInsets.only(top: 10),
                   padding: EdgeInsets.only(left: 10),
-                  child: DonutChart(gastosCategoria(fecha)),
+                  child: DonutChart(Facade.gastosCategoria(fecha)),
                 )
               ],
             ),
@@ -236,7 +159,7 @@ class _HomeState extends State<Home> {
                 height: 170,
                 width: double.infinity,
                 padding: EdgeInsets.only(left: 10, right: 10),
-                child: TimeLineChar(historialGastos(fecha)),
+                child: TimeLineChar(Facade.historialGastos(fecha)),
               ),
             ],
           ),

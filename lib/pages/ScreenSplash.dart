@@ -25,9 +25,9 @@ class _ScreenSplashState extends State<ScreenSplash> {
 
       final usuarios = await Usuario().select().toList();
       if (usuarios.length <= 0) {
-        final usuario = await Usuario.withFields("Default", false).save();
+        final usuario = await Usuario.withFields("Default").save();
         final cuenta =
-            await Cuenta.withFields("Personal", 0, 0, 0, usuario, false).save();
+            await Cuenta.withFields("Personal", 0, 0, 0, usuario).save();
         mainProvider.initialState("Default", usuario, cuenta, 0, 0, 0);
 
         /*Creando Categorias por defecto*/

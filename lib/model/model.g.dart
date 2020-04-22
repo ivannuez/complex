@@ -26,7 +26,7 @@ class TableUsuario extends SqfEntityTableBase {
     tableName = 'usuarios';
     primaryKeyName = 'idUsuario';
     primaryKeyType = PrimaryKeyType.integer_auto_incremental;
-    useSoftDeleting = true;
+    useSoftDeleting = false;
     // when useSoftDeleting is true, creates a field named 'isDeleted' on the table, and set to '1' this field when item deleted (does not hard delete)
 
     // declare fields
@@ -48,7 +48,7 @@ class TableCategoria extends SqfEntityTableBase {
     tableName = 'categorias';
     primaryKeyName = 'idCategoria';
     primaryKeyType = PrimaryKeyType.integer_auto_incremental;
-    useSoftDeleting = true;
+    useSoftDeleting = false;
     // when useSoftDeleting is true, creates a field named 'isDeleted' on the table, and set to '1' this field when item deleted (does not hard delete)
 
     // declare fields
@@ -73,7 +73,7 @@ class TableCuenta extends SqfEntityTableBase {
     tableName = 'cuentas';
     primaryKeyName = 'idCuenta';
     primaryKeyType = PrimaryKeyType.integer_auto_incremental;
-    useSoftDeleting = true;
+    useSoftDeleting = false;
     // when useSoftDeleting is true, creates a field named 'isDeleted' on the table, and set to '1' this field when item deleted (does not hard delete)
 
     // declare fields
@@ -104,7 +104,7 @@ class TableDetallesCuenta extends SqfEntityTableBase {
     relationType = RelationType.ONE_TO_MANY;
     primaryKeyName = 'idDetalleCuenta';
     primaryKeyType = PrimaryKeyType.integer_auto_incremental;
-    useSoftDeleting = true;
+    useSoftDeleting = false;
     // when useSoftDeleting is true, creates a field named 'isDeleted' on the table, and set to '1' this field when item deleted (does not hard delete)
 
     // declare fields
@@ -132,6 +132,35 @@ class TableDetallesCuenta extends SqfEntityTableBase {
   }
 }
 
+// Saldo TABLE
+class TableSaldo extends SqfEntityTableBase {
+  TableSaldo() {
+    // declare properties of EntityTable
+    tableName = 'saldos';
+    relationType = RelationType.ONE_TO_MANY;
+    primaryKeyName = 'idSaldo';
+    primaryKeyType = PrimaryKeyType.integer_auto_incremental;
+    useSoftDeleting = false;
+    // when useSoftDeleting is true, creates a field named 'isDeleted' on the table, and set to '1' this field when item deleted (does not hard delete)
+
+    // declare fields
+    fields = [
+      SqfEntityFieldBase('fecha', DbType.text),
+      SqfEntityFieldBase('monto', DbType.real, defaultValue: 0),
+      SqfEntityFieldRelationshipBase(
+          TableCuenta.getInstance, DeleteRule.CASCADE,
+          defaultValue: 0,
+          fieldName: 'cuentasIdCuenta',
+          relationType: RelationType.ONE_TO_MANY),
+    ];
+    super.init();
+  }
+  static SqfEntityTableBase _instance;
+  static SqfEntityTableBase get getInstance {
+    return _instance = _instance ?? TableSaldo();
+  }
+}
+
 // Meta TABLE
 class TableMeta extends SqfEntityTableBase {
   TableMeta() {
@@ -139,7 +168,7 @@ class TableMeta extends SqfEntityTableBase {
     tableName = 'metas';
     primaryKeyName = 'idMeta';
     primaryKeyType = PrimaryKeyType.integer_auto_incremental;
-    useSoftDeleting = true;
+    useSoftDeleting = false;
     // when useSoftDeleting is true, creates a field named 'isDeleted' on the table, and set to '1' this field when item deleted (does not hard delete)
 
     // declare fields
@@ -168,7 +197,7 @@ class TableDetallesMeta extends SqfEntityTableBase {
     relationType = RelationType.ONE_TO_MANY;
     primaryKeyName = 'idDetalleMeta';
     primaryKeyType = PrimaryKeyType.integer_auto_incremental;
-    useSoftDeleting = true;
+    useSoftDeleting = false;
     // when useSoftDeleting is true, creates a field named 'isDeleted' on the table, and set to '1' this field when item deleted (does not hard delete)
 
     // declare fields
@@ -198,6 +227,7 @@ class DbComplex extends SqfEntityModelProvider {
       TableCategoria.getInstance,
       TableCuenta.getInstance,
       TableDetallesCuenta.getInstance,
+      TableSaldo.getInstance,
       TableMeta.getInstance,
       TableDetallesMeta.getInstance,
     ];
@@ -216,27 +246,23 @@ class DbComplex extends SqfEntityModelProvider {
 // BEGIN ENTITIES
 // region Usuario
 class Usuario {
-  Usuario({this.idUsuario, this.nombre, this.isDeleted}) {
+  Usuario({this.idUsuario, this.nombre}) {
     _setDefaultValues();
   }
-  Usuario.withFields(this.nombre, this.isDeleted) {
+  Usuario.withFields(this.nombre) {
     _setDefaultValues();
   }
-  Usuario.withId(idUsuario, this.nombre, this.isDeleted) {
+  Usuario.withId(idUsuario, this.nombre) {
     _setDefaultValues();
   }
   Usuario.fromMap(Map<String, dynamic> o) {
     _setDefaultValues();
     idUsuario = int.tryParse(o['idUsuario'].toString());
     if (o['nombre'] != null) nombre = o['nombre'] as String;
-    isDeleted = o['isDeleted'] != null
-        ? o['isDeleted'] == 1 || o['isDeleted'] == true
-        : null;
   }
   // FIELDS (Usuario)
   int idUsuario;
   String nombre;
-  bool isDeleted;
 
   BoolResult saveResult;
   // end FIELDS (Usuario)
@@ -258,7 +284,7 @@ class Usuario {
 
 // END COLLECTIONS & VIRTUALS (Usuario)
 
-  static const bool _softDeleteActivated = true;
+  static const bool _softDeleteActivated = false;
   UsuarioManager __mnUsuario;
 
   UsuarioManager get _mnUsuario {
@@ -276,10 +302,6 @@ class Usuario {
       map['nombre'] = nombre;
     }
 
-    if (isDeleted != null) {
-      map['isDeleted'] = forQuery ? (isDeleted ? 1 : 0) : isDeleted;
-    }
-
     return map;
   }
 
@@ -293,10 +315,6 @@ class Usuario {
     }
     if (nombre != null) {
       map['nombre'] = nombre;
-    }
-
-    if (isDeleted != null) {
-      map['isDeleted'] = forQuery ? (isDeleted ? 1 : 0) : isDeleted;
     }
 
 // COLLECTIONS (Usuario)
@@ -319,11 +337,11 @@ class Usuario {
   }
 
   List<dynamic> toArgs() {
-    return [nombre, isDeleted];
+    return [nombre];
   }
 
   List<dynamic> toArgsWithIds() {
-    return [idUsuario, nombre, isDeleted];
+    return [idUsuario, nombre];
   }
 
   static Future<List<Usuario>> fromWebUrl(String url) async {
@@ -464,7 +482,7 @@ class Usuario {
   ///
   /// Returns a <List<BoolResult>>
   Future<List<dynamic>> saveAll(List<Usuario> usuarios) async {
-    // final results = _mnUsuario.saveAll('INSERT OR REPLACE INTO usuarios (idUsuario,nombre,isDeleted)  VALUES (?,?,?)',usuarios);
+    // final results = _mnUsuario.saveAll('INSERT OR REPLACE INTO usuarios (idUsuario,nombre)  VALUES (?,?)',usuarios);
     // return results; removed in sqfentity_gen 1.3.0+6
     DbComplex().batchStart();
     for (final obj in usuarios) {
@@ -479,8 +497,8 @@ class Usuario {
   Future<int> upsert() async {
     try {
       if (await _mnUsuario.rawInsert(
-              'INSERT OR REPLACE INTO usuarios (idUsuario,nombre,isDeleted)  VALUES (?,?,?)',
-              [idUsuario, nombre, isDeleted]) ==
+              'INSERT OR REPLACE INTO usuarios (idUsuario,nombre)  VALUES (?,?)',
+              [idUsuario, nombre]) ==
           1) {
         saveResult = BoolResult(
             success: true,
@@ -507,7 +525,7 @@ class Usuario {
   /// Returns a BoolCommitResult
   Future<BoolCommitResult> upsertAll(List<Usuario> usuarios) async {
     final results = await _mnUsuario.rawInsertAll(
-        'INSERT OR REPLACE INTO usuarios (idUsuario,nombre,isDeleted)  VALUES (?,?,?)',
+        'INSERT OR REPLACE INTO usuarios (idUsuario,nombre)  VALUES (?,?)',
         usuarios);
     return results;
   }
@@ -528,25 +546,13 @@ class Usuario {
     if (!result.success) {
       return result;
     }
-    if (!_softDeleteActivated || hardDelete || isDeleted) {
+    if (!_softDeleteActivated || hardDelete) {
       return _mnUsuario.delete(
           QueryParams(whereString: 'idUsuario=?', whereArguments: [idUsuario]));
     } else {
       return _mnUsuario.updateBatch(
           QueryParams(whereString: 'idUsuario=?', whereArguments: [idUsuario]),
           {'isDeleted': 1});
-    }
-  }
-
-  /// Recover Usuario>
-
-  /// <returns>BoolResult res.success=Recovered, not res.success=Can not recovered
-  Future<BoolResult> recover([bool recoverChilds = true]) async {
-    print('SQFENTITIY: recover Usuario invoked (idUsuario=$idUsuario)');
-    {
-      return _mnUsuario.updateBatch(
-          QueryParams(whereString: 'idUsuario=?', whereArguments: [idUsuario]),
-          {'isDeleted': 0});
     }
   }
 
@@ -566,9 +572,7 @@ class Usuario {
       ..qparams.distinct = true;
   }
 
-  void _setDefaultValues() {
-    isDeleted = isDeleted ?? false;
-  }
+  void _setDefaultValues() {}
   // END METHODS
   // CUSTOM CODES
   /*
@@ -951,11 +955,6 @@ class UsuarioFilterBuilder extends SearchCriteria {
     return _nombre = setField(_nombre, 'nombre', DbType.text);
   }
 
-  UsuarioField _isDeleted;
-  UsuarioField get isDeleted {
-    return _isDeleted = setField(_isDeleted, 'isDeleted', DbType.bool);
-  }
-
   bool _getIsDeleted;
 
   void _buildParameters() {
@@ -1047,13 +1046,6 @@ class UsuarioFilterBuilder extends SearchCriteria {
       r = await _obj._mnUsuario.delete(qparams);
     }
     return r;
-  }
-
-  Future<BoolResult> recover() async {
-    _getIsDeleted = true;
-    _buildParameters();
-    print('SQFENTITIY: recover Usuario bulk invoked');
-    return _obj._mnUsuario.updateBatch(qparams, {'isDeleted': 0});
   }
 
   /// using:
@@ -1313,12 +1305,6 @@ class UsuarioFields {
     return _fNombre =
         _fNombre ?? SqlSyntax.setField(_fNombre, 'nombre', DbType.text);
   }
-
-  static TableField _fIsDeleted;
-  static TableField get isDeleted {
-    return _fIsDeleted = _fIsDeleted ??
-        SqlSyntax.setField(_fIsDeleted, 'isDeleted', DbType.integer);
-  }
 }
 // endregion UsuarioFields
 
@@ -1339,20 +1325,14 @@ class UsuarioManager extends SqfEntityProvider {
 // region Categoria
 class Categoria {
   Categoria(
-      {this.idCategoria,
-      this.descripcion,
-      this.color,
-      this.icono,
-      this.tipo,
-      this.isDeleted}) {
+      {this.idCategoria, this.descripcion, this.color, this.icono, this.tipo}) {
     _setDefaultValues();
   }
-  Categoria.withFields(
-      this.descripcion, this.color, this.icono, this.tipo, this.isDeleted) {
+  Categoria.withFields(this.descripcion, this.color, this.icono, this.tipo) {
     _setDefaultValues();
   }
-  Categoria.withId(idCategoria, this.descripcion, this.color, this.icono,
-      this.tipo, this.isDeleted) {
+  Categoria.withId(
+      idCategoria, this.descripcion, this.color, this.icono, this.tipo) {
     _setDefaultValues();
   }
   Categoria.fromMap(Map<String, dynamic> o) {
@@ -1362,9 +1342,6 @@ class Categoria {
     if (o['color'] != null) color = int.tryParse(o['color'].toString());
     if (o['icono'] != null) icono = o['icono'] as String;
     if (o['tipo'] != null) tipo = o['tipo'] as String;
-    isDeleted = o['isDeleted'] != null
-        ? o['isDeleted'] == 1 || o['isDeleted'] == true
-        : null;
   }
   // FIELDS (Categoria)
   int idCategoria;
@@ -1372,7 +1349,6 @@ class Categoria {
   int color;
   String icono;
   String tipo;
-  bool isDeleted;
 
   BoolResult saveResult;
   // end FIELDS (Categoria)
@@ -1394,7 +1370,7 @@ class Categoria {
 
 // END COLLECTIONS & VIRTUALS (Categoria)
 
-  static const bool _softDeleteActivated = true;
+  static const bool _softDeleteActivated = false;
   CategoriaManager __mnCategoria;
 
   CategoriaManager get _mnCategoria {
@@ -1424,10 +1400,6 @@ class Categoria {
       map['tipo'] = tipo;
     }
 
-    if (isDeleted != null) {
-      map['isDeleted'] = forQuery ? (isDeleted ? 1 : 0) : isDeleted;
-    }
-
     return map;
   }
 
@@ -1455,10 +1427,6 @@ class Categoria {
       map['tipo'] = tipo;
     }
 
-    if (isDeleted != null) {
-      map['isDeleted'] = forQuery ? (isDeleted ? 1 : 0) : isDeleted;
-    }
-
 // COLLECTIONS (Categoria)
     if (!forQuery) {
       map['DetallesCuentas'] = await getDetallesCuentas().toMapList();
@@ -1479,11 +1447,11 @@ class Categoria {
   }
 
   List<dynamic> toArgs() {
-    return [descripcion, color, icono, tipo, isDeleted];
+    return [descripcion, color, icono, tipo];
   }
 
   List<dynamic> toArgsWithIds() {
-    return [idCategoria, descripcion, color, icono, tipo, isDeleted];
+    return [idCategoria, descripcion, color, icono, tipo];
   }
 
   static Future<List<Categoria>> fromWebUrl(String url) async {
@@ -1628,7 +1596,7 @@ class Categoria {
   ///
   /// Returns a <List<BoolResult>>
   Future<List<dynamic>> saveAll(List<Categoria> categorias) async {
-    // final results = _mnCategoria.saveAll('INSERT OR REPLACE INTO categorias (idCategoria,descripcion, color, icono, tipo,isDeleted)  VALUES (?,?,?,?,?,?)',categorias);
+    // final results = _mnCategoria.saveAll('INSERT OR REPLACE INTO categorias (idCategoria,descripcion, color, icono, tipo)  VALUES (?,?,?,?,?)',categorias);
     // return results; removed in sqfentity_gen 1.3.0+6
     DbComplex().batchStart();
     for (final obj in categorias) {
@@ -1643,8 +1611,8 @@ class Categoria {
   Future<int> upsert() async {
     try {
       if (await _mnCategoria.rawInsert(
-              'INSERT OR REPLACE INTO categorias (idCategoria,descripcion, color, icono, tipo,isDeleted)  VALUES (?,?,?,?,?,?)',
-              [idCategoria, descripcion, color, icono, tipo, isDeleted]) ==
+              'INSERT OR REPLACE INTO categorias (idCategoria,descripcion, color, icono, tipo)  VALUES (?,?,?,?,?)',
+              [idCategoria, descripcion, color, icono, tipo]) ==
           1) {
         saveResult = BoolResult(
             success: true,
@@ -1671,7 +1639,7 @@ class Categoria {
   /// Returns a BoolCommitResult
   Future<BoolCommitResult> upsertAll(List<Categoria> categorias) async {
     final results = await _mnCategoria.rawInsertAll(
-        'INSERT OR REPLACE INTO categorias (idCategoria,descripcion, color, icono, tipo,isDeleted)  VALUES (?,?,?,?,?,?)',
+        'INSERT OR REPLACE INTO categorias (idCategoria,descripcion, color, icono, tipo)  VALUES (?,?,?,?,?)',
         categorias);
     return results;
   }
@@ -1692,7 +1660,7 @@ class Categoria {
     if (!result.success) {
       return result;
     }
-    if (!_softDeleteActivated || hardDelete || isDeleted) {
+    if (!_softDeleteActivated || hardDelete) {
       return _mnCategoria.delete(QueryParams(
           whereString: 'idCategoria=?', whereArguments: [idCategoria]));
     } else {
@@ -1700,19 +1668,6 @@ class Categoria {
           QueryParams(
               whereString: 'idCategoria=?', whereArguments: [idCategoria]),
           {'isDeleted': 1});
-    }
-  }
-
-  /// Recover Categoria>
-
-  /// <returns>BoolResult res.success=Recovered, not res.success=Can not recovered
-  Future<BoolResult> recover([bool recoverChilds = true]) async {
-    print('SQFENTITIY: recover Categoria invoked (idCategoria=$idCategoria)');
-    {
-      return _mnCategoria.updateBatch(
-          QueryParams(
-              whereString: 'idCategoria=?', whereArguments: [idCategoria]),
-          {'isDeleted': 0});
     }
   }
 
@@ -1734,7 +1689,6 @@ class Categoria {
 
   void _setDefaultValues() {
     color = color ?? 0;
-    isDeleted = isDeleted ?? false;
   }
   // END METHODS
   // CUSTOM CODES
@@ -2133,11 +2087,6 @@ class CategoriaFilterBuilder extends SearchCriteria {
     return _tipo = setField(_tipo, 'tipo', DbType.text);
   }
 
-  CategoriaField _isDeleted;
-  CategoriaField get isDeleted {
-    return _isDeleted = setField(_isDeleted, 'isDeleted', DbType.bool);
-  }
-
   bool _getIsDeleted;
 
   void _buildParameters() {
@@ -2229,13 +2178,6 @@ class CategoriaFilterBuilder extends SearchCriteria {
       r = await _obj._mnCategoria.delete(qparams);
     }
     return r;
-  }
-
-  Future<BoolResult> recover() async {
-    _getIsDeleted = true;
-    _buildParameters();
-    print('SQFENTITIY: recover Categoria bulk invoked');
-    return _obj._mnCategoria.updateBatch(qparams, {'isDeleted': 0});
   }
 
   /// using:
@@ -2513,12 +2455,6 @@ class CategoriaFields {
   static TableField get tipo {
     return _fTipo = _fTipo ?? SqlSyntax.setField(_fTipo, 'tipo', DbType.text);
   }
-
-  static TableField _fIsDeleted;
-  static TableField get isDeleted {
-    return _fIsDeleted = _fIsDeleted ??
-        SqlSyntax.setField(_fIsDeleted, 'isDeleted', DbType.integer);
-  }
 }
 // endregion CategoriaFields
 
@@ -2544,16 +2480,15 @@ class Cuenta {
       this.saldo,
       this.totalIngreso,
       this.totalEgreso,
-      this.usuariosIdUsuario,
-      this.isDeleted}) {
+      this.usuariosIdUsuario}) {
     _setDefaultValues();
   }
   Cuenta.withFields(this.descripcion, this.saldo, this.totalIngreso,
-      this.totalEgreso, this.usuariosIdUsuario, this.isDeleted) {
+      this.totalEgreso, this.usuariosIdUsuario) {
     _setDefaultValues();
   }
   Cuenta.withId(idCuenta, this.descripcion, this.saldo, this.totalIngreso,
-      this.totalEgreso, this.usuariosIdUsuario, this.isDeleted) {
+      this.totalEgreso, this.usuariosIdUsuario) {
     _setDefaultValues();
   }
   Cuenta.fromMap(Map<String, dynamic> o) {
@@ -2566,10 +2501,6 @@ class Cuenta {
     if (o['totalEgreso'] != null)
       totalEgreso = double.tryParse(o['totalEgreso'].toString());
     usuariosIdUsuario = int.tryParse(o['usuariosIdUsuario'].toString());
-
-    isDeleted = o['isDeleted'] != null
-        ? o['isDeleted'] == 1 || o['isDeleted'] == true
-        : null;
 
     // RELATIONSHIPS FromMAP
     plUsuario = o['usuario'] != null
@@ -2584,7 +2515,6 @@ class Cuenta {
   double totalIngreso;
   double totalEgreso;
   int usuariosIdUsuario;
-  bool isDeleted;
 
   BoolResult saveResult;
   // end FIELDS (Cuenta)
@@ -2617,9 +2547,23 @@ class Cuenta {
         .and;
   }
 
+  /// to load children of items to this field, use preload parameter. Ex: toList(preload:true) or toSingle(preload:true) or getById(preload:true)
+  /// You can also specify this object into certain preload fields. Ex: toList(preload:true, preloadFields:['plSaldos', 'plField2'..]) or so on..
+  List<Saldo> plSaldos;
+
+  /// get Saldo(s) filtered by cuentasIdCuenta=idCuenta
+  SaldoFilterBuilder getSaldos(
+      {List<String> columnsToSelect, bool getIsDeleted}) {
+    return Saldo()
+        .select(columnsToSelect: columnsToSelect, getIsDeleted: getIsDeleted)
+        .cuentasIdCuenta
+        .equals(idCuenta)
+        .and;
+  }
+
 // END COLLECTIONS & VIRTUALS (Cuenta)
 
-  static const bool _softDeleteActivated = true;
+  static const bool _softDeleteActivated = false;
   CuentaManager __mnCuenta;
 
   CuentaManager get _mnCuenta {
@@ -2653,10 +2597,6 @@ class Cuenta {
       map['usuariosIdUsuario'] = forView ? plUsuario.nombre : usuariosIdUsuario;
     }
 
-    if (isDeleted != null) {
-      map['isDeleted'] = forQuery ? (isDeleted ? 1 : 0) : isDeleted;
-    }
-
     return map;
   }
 
@@ -2688,13 +2628,12 @@ class Cuenta {
       map['usuariosIdUsuario'] = forView ? plUsuario.nombre : usuariosIdUsuario;
     }
 
-    if (isDeleted != null) {
-      map['isDeleted'] = forQuery ? (isDeleted ? 1 : 0) : isDeleted;
-    }
-
 // COLLECTIONS (Cuenta)
     if (!forQuery) {
       map['DetallesCuentas'] = await getDetallesCuentas().toMapList();
+    }
+    if (!forQuery) {
+      map['Saldos'] = await getSaldos().toMapList();
     }
 // END COLLECTIONS (Cuenta)
 
@@ -2712,14 +2651,7 @@ class Cuenta {
   }
 
   List<dynamic> toArgs() {
-    return [
-      descripcion,
-      saldo,
-      totalIngreso,
-      totalEgreso,
-      usuariosIdUsuario,
-      isDeleted
-    ];
+    return [descripcion, saldo, totalIngreso, totalEgreso, usuariosIdUsuario];
   }
 
   List<dynamic> toArgsWithIds() {
@@ -2729,8 +2661,7 @@ class Cuenta {
       saldo,
       totalIngreso,
       totalEgreso,
-      usuariosIdUsuario,
-      isDeleted
+      usuariosIdUsuario
     ];
   }
 
@@ -2783,6 +2714,16 @@ class Cuenta {
           loadedFields.add('cuentas.plDetallesCuentas');
           obj.plDetallesCuentas = obj.plDetallesCuentas ??
               await obj.getDetallesCuentas().toList(
+                  preload: preload,
+                  preloadFields: preloadFields,
+                  loadParents: false,
+                  loadedFields: loadedFields);
+        }
+        if (!loadedFields.contains('cuentas.plSaldos') &&
+            (preloadFields == null || preloadFields.contains('plSaldos'))) {
+          loadedFields.add('cuentas.plSaldos');
+          obj.plSaldos = obj.plSaldos ??
+              await obj.getSaldos().toList(
                   preload: preload,
                   preloadFields: preloadFields,
                   loadParents: false,
@@ -2851,6 +2792,16 @@ class Cuenta {
                   loadParents: false,
                   loadedFields: loadedFields);
         }
+        if (!loadedFields.contains('cuentas.plSaldos') &&
+            (preloadFields == null || preloadFields.contains('plSaldos'))) {
+          loadedFields.add('cuentas.plSaldos');
+          obj.plSaldos = obj.plSaldos ??
+              await obj.getSaldos().toList(
+                  preload: preload,
+                  preloadFields: preloadFields,
+                  loadParents: false,
+                  loadedFields: loadedFields);
+        }
       } // END RELATIONSHIPS PRELOAD CHILD
 
       // RELATIONSHIPS PRELOAD
@@ -2899,7 +2850,7 @@ class Cuenta {
   ///
   /// Returns a <List<BoolResult>>
   Future<List<dynamic>> saveAll(List<Cuenta> cuentas) async {
-    // final results = _mnCuenta.saveAll('INSERT OR REPLACE INTO cuentas (idCuenta,descripcion, saldo, totalIngreso, totalEgreso, usuariosIdUsuario,isDeleted)  VALUES (?,?,?,?,?,?,?)',cuentas);
+    // final results = _mnCuenta.saveAll('INSERT OR REPLACE INTO cuentas (idCuenta,descripcion, saldo, totalIngreso, totalEgreso, usuariosIdUsuario)  VALUES (?,?,?,?,?,?)',cuentas);
     // return results; removed in sqfentity_gen 1.3.0+6
     DbComplex().batchStart();
     for (final obj in cuentas) {
@@ -2914,15 +2865,14 @@ class Cuenta {
   Future<int> upsert() async {
     try {
       if (await _mnCuenta.rawInsert(
-              'INSERT OR REPLACE INTO cuentas (idCuenta,descripcion, saldo, totalIngreso, totalEgreso, usuariosIdUsuario,isDeleted)  VALUES (?,?,?,?,?,?,?)',
+              'INSERT OR REPLACE INTO cuentas (idCuenta,descripcion, saldo, totalIngreso, totalEgreso, usuariosIdUsuario)  VALUES (?,?,?,?,?,?)',
               [
                 idCuenta,
                 descripcion,
                 saldo,
                 totalIngreso,
                 totalEgreso,
-                usuariosIdUsuario,
-                isDeleted
+                usuariosIdUsuario
               ]) ==
           1) {
         saveResult = BoolResult(
@@ -2949,7 +2899,7 @@ class Cuenta {
   /// Returns a BoolCommitResult
   Future<BoolCommitResult> upsertAll(List<Cuenta> cuentas) async {
     final results = await _mnCuenta.rawInsertAll(
-        'INSERT OR REPLACE INTO cuentas (idCuenta,descripcion, saldo, totalIngreso, totalEgreso, usuariosIdUsuario,isDeleted)  VALUES (?,?,?,?,?,?,?)',
+        'INSERT OR REPLACE INTO cuentas (idCuenta,descripcion, saldo, totalIngreso, totalEgreso, usuariosIdUsuario)  VALUES (?,?,?,?,?,?)',
         cuentas);
     return results;
   }
@@ -2970,39 +2920,23 @@ class Cuenta {
     if (!result.success) {
       return result;
     }
-    if (!_softDeleteActivated || hardDelete || isDeleted) {
+    {
+      result = await Saldo()
+          .select()
+          .cuentasIdCuenta
+          .equals(idCuenta)
+          .delete(hardDelete);
+    }
+    if (!result.success) {
+      return result;
+    }
+    if (!_softDeleteActivated || hardDelete) {
       return _mnCuenta.delete(
           QueryParams(whereString: 'idCuenta=?', whereArguments: [idCuenta]));
     } else {
       return _mnCuenta.updateBatch(
           QueryParams(whereString: 'idCuenta=?', whereArguments: [idCuenta]),
           {'isDeleted': 1});
-    }
-  }
-
-  /// Recover Cuenta>
-
-  /// <returns>BoolResult res.success=Recovered, not res.success=Can not recovered
-  Future<BoolResult> recover([bool recoverChilds = true]) async {
-    print('SQFENTITIY: recover Cuenta invoked (idCuenta=$idCuenta)');
-    var result = BoolResult();
-    if (recoverChilds) {
-      result = await DetallesCuenta()
-          .select(getIsDeleted: true)
-          .isDeleted
-          .equals(true)
-          .and
-          .cuentasIdCuenta
-          .equals(idCuenta)
-          .update({'isDeleted': 0});
-    }
-    if (!result.success && recoverChilds) {
-      return result;
-    }
-    {
-      return _mnCuenta.updateBatch(
-          QueryParams(whereString: 'idCuenta=?', whereArguments: [idCuenta]),
-          {'isDeleted': 0});
     }
   }
 
@@ -3027,7 +2961,6 @@ class Cuenta {
     totalIngreso = totalIngreso ?? 0;
     totalEgreso = totalEgreso ?? 0;
     usuariosIdUsuario = usuariosIdUsuario ?? 0;
-    isDeleted = isDeleted ?? false;
   }
   // END METHODS
   // CUSTOM CODES
@@ -3432,11 +3365,6 @@ class CuentaFilterBuilder extends SearchCriteria {
         setField(_usuariosIdUsuario, 'usuariosIdUsuario', DbType.integer);
   }
 
-  CuentaField _isDeleted;
-  CuentaField get isDeleted {
-    return _isDeleted = setField(_isDeleted, 'isDeleted', DbType.bool);
-  }
-
   bool _getIsDeleted;
 
   void _buildParameters() {
@@ -3521,12 +3449,6 @@ class CuentaFilterBuilder extends SearchCriteria {
   Future<BoolResult> delete([bool hardDelete = false]) async {
     _buildParameters();
     var r = BoolResult();
-    final detallesCuentaBycuentasIdCuentaidList = await toListPrimaryKey(false);
-    await DetallesCuenta()
-        .select()
-        .cuentasIdCuenta
-        .inValues(detallesCuentaBycuentasIdCuentaidList)
-        .delete(hardDelete);
 
     if (Cuenta._softDeleteActivated && !hardDelete) {
       r = await _obj._mnCuenta.updateBatch(qparams, {'isDeleted': 1});
@@ -3534,22 +3456,6 @@ class CuentaFilterBuilder extends SearchCriteria {
       r = await _obj._mnCuenta.delete(qparams);
     }
     return r;
-  }
-
-  Future<BoolResult> recover() async {
-    _getIsDeleted = true;
-    _buildParameters();
-    print('SQFENTITIY: recover Cuenta bulk invoked');
-    final detallesCuentaBycuentasIdCuentaidList = await toListPrimaryKey(false);
-    await DetallesCuenta()
-        .select(getIsDeleted: true)
-        .isDeleted
-        .equals(true)
-        .and
-        .cuentasIdCuenta
-        .inValues(detallesCuentaBycuentasIdCuentaidList)
-        .update({'isDeleted': 0});
-    return _obj._mnCuenta.updateBatch(qparams, {'isDeleted': 0});
   }
 
   /// using:
@@ -3602,6 +3508,16 @@ class CuentaFilterBuilder extends SearchCriteria {
           loadedFields.add('cuentas.plDetallesCuentas');
           obj.plDetallesCuentas = obj.plDetallesCuentas ??
               await obj.getDetallesCuentas().toList(
+                  preload: preload,
+                  preloadFields: preloadFields,
+                  loadParents: false,
+                  loadedFields: loadedFields);
+        }
+        if (!loadedFields.contains('cuentas.plSaldos') &&
+            (preloadFields == null || preloadFields.contains('plSaldos'))) {
+          loadedFields.add('cuentas.plSaldos');
+          obj.plSaldos = obj.plSaldos ??
+              await obj.getSaldos().toList(
                   preload: preload,
                   preloadFields: preloadFields,
                   loadParents: false,
@@ -3848,12 +3764,6 @@ class CuentaFields {
         SqlSyntax.setField(
             _fUsuariosIdUsuario, 'usuariosIdUsuario', DbType.integer);
   }
-
-  static TableField _fIsDeleted;
-  static TableField get isDeleted {
-    return _fIsDeleted = _fIsDeleted ??
-        SqlSyntax.setField(_fIsDeleted, 'isDeleted', DbType.integer);
-  }
 }
 // endregion CuentaFields
 
@@ -3880,18 +3790,11 @@ class DetallesCuenta {
       this.monto,
       this.tipoTransaccion,
       this.cuentasIdCuenta,
-      this.categoriasIdCategoria,
-      this.isDeleted}) {
+      this.categoriasIdCategoria}) {
     _setDefaultValues();
   }
-  DetallesCuenta.withFields(
-      this.descripcion,
-      this.fecha,
-      this.monto,
-      this.tipoTransaccion,
-      this.cuentasIdCuenta,
-      this.categoriasIdCategoria,
-      this.isDeleted) {
+  DetallesCuenta.withFields(this.descripcion, this.fecha, this.monto,
+      this.tipoTransaccion, this.cuentasIdCuenta, this.categoriasIdCategoria) {
     _setDefaultValues();
   }
   DetallesCuenta.withId(
@@ -3901,8 +3804,7 @@ class DetallesCuenta {
       this.monto,
       this.tipoTransaccion,
       this.cuentasIdCuenta,
-      this.categoriasIdCategoria,
-      this.isDeleted) {
+      this.categoriasIdCategoria) {
     _setDefaultValues();
   }
   DetallesCuenta.fromMap(Map<String, dynamic> o) {
@@ -3916,10 +3818,6 @@ class DetallesCuenta {
     cuentasIdCuenta = int.tryParse(o['cuentasIdCuenta'].toString());
 
     categoriasIdCategoria = int.tryParse(o['categoriasIdCategoria'].toString());
-
-    isDeleted = o['isDeleted'] != null
-        ? o['isDeleted'] == 1 || o['isDeleted'] == true
-        : null;
 
     // RELATIONSHIPS FromMAP
     plCuenta = o['cuenta'] != null
@@ -3938,7 +3836,6 @@ class DetallesCuenta {
   String tipoTransaccion;
   int cuentasIdCuenta;
   int categoriasIdCategoria;
-  bool isDeleted;
 
   BoolResult saveResult;
   // end FIELDS (DetallesCuenta)
@@ -3967,7 +3864,7 @@ class DetallesCuenta {
   }
   // END RELATIONSHIPS (DetallesCuenta)
 
-  static const bool _softDeleteActivated = true;
+  static const bool _softDeleteActivated = false;
   DetallesCuentaManager __mnDetallesCuenta;
 
   DetallesCuentaManager get _mnDetallesCuenta {
@@ -4006,10 +3903,6 @@ class DetallesCuenta {
           forView ? plCategoria.descripcion : categoriasIdCategoria;
     }
 
-    if (isDeleted != null) {
-      map['isDeleted'] = forQuery ? (isDeleted ? 1 : 0) : isDeleted;
-    }
-
     return map;
   }
 
@@ -4046,10 +3939,6 @@ class DetallesCuenta {
           forView ? plCategoria.descripcion : categoriasIdCategoria;
     }
 
-    if (isDeleted != null) {
-      map['isDeleted'] = forQuery ? (isDeleted ? 1 : 0) : isDeleted;
-    }
-
     return map;
   }
 
@@ -4070,8 +3959,7 @@ class DetallesCuenta {
       monto,
       tipoTransaccion,
       cuentasIdCuenta,
-      categoriasIdCategoria,
-      isDeleted
+      categoriasIdCategoria
     ];
   }
 
@@ -4083,8 +3971,7 @@ class DetallesCuenta {
       monto,
       tipoTransaccion,
       cuentasIdCuenta,
-      categoriasIdCategoria,
-      isDeleted
+      categoriasIdCategoria
     ];
   }
 
@@ -4240,7 +4127,7 @@ class DetallesCuenta {
   ///
   /// Returns a <List<BoolResult>>
   Future<List<dynamic>> saveAll(List<DetallesCuenta> detallescuentas) async {
-    // final results = _mnDetallesCuenta.saveAll('INSERT OR REPLACE INTO detallesCuenta (idDetalleCuenta,descripcion, fecha, monto, tipoTransaccion, cuentasIdCuenta, categoriasIdCategoria,isDeleted)  VALUES (?,?,?,?,?,?,?,?)',detallescuentas);
+    // final results = _mnDetallesCuenta.saveAll('INSERT OR REPLACE INTO detallesCuenta (idDetalleCuenta,descripcion, fecha, monto, tipoTransaccion, cuentasIdCuenta, categoriasIdCategoria)  VALUES (?,?,?,?,?,?,?)',detallescuentas);
     // return results; removed in sqfentity_gen 1.3.0+6
     DbComplex().batchStart();
     for (final obj in detallescuentas) {
@@ -4255,7 +4142,7 @@ class DetallesCuenta {
   Future<int> upsert() async {
     try {
       if (await _mnDetallesCuenta.rawInsert(
-              'INSERT OR REPLACE INTO detallesCuenta (idDetalleCuenta,descripcion, fecha, monto, tipoTransaccion, cuentasIdCuenta, categoriasIdCategoria,isDeleted)  VALUES (?,?,?,?,?,?,?,?)',
+              'INSERT OR REPLACE INTO detallesCuenta (idDetalleCuenta,descripcion, fecha, monto, tipoTransaccion, cuentasIdCuenta, categoriasIdCategoria)  VALUES (?,?,?,?,?,?,?)',
               [
                 idDetalleCuenta,
                 descripcion,
@@ -4263,8 +4150,7 @@ class DetallesCuenta {
                 monto,
                 tipoTransaccion,
                 cuentasIdCuenta,
-                categoriasIdCategoria,
-                isDeleted
+                categoriasIdCategoria
               ]) ==
           1) {
         saveResult = BoolResult(
@@ -4294,7 +4180,7 @@ class DetallesCuenta {
   Future<BoolCommitResult> upsertAll(
       List<DetallesCuenta> detallescuentas) async {
     final results = await _mnDetallesCuenta.rawInsertAll(
-        'INSERT OR REPLACE INTO detallesCuenta (idDetalleCuenta,descripcion, fecha, monto, tipoTransaccion, cuentasIdCuenta, categoriasIdCategoria,isDeleted)  VALUES (?,?,?,?,?,?,?,?)',
+        'INSERT OR REPLACE INTO detallesCuenta (idDetalleCuenta,descripcion, fecha, monto, tipoTransaccion, cuentasIdCuenta, categoriasIdCategoria)  VALUES (?,?,?,?,?,?,?)',
         detallescuentas);
     return results;
   }
@@ -4305,7 +4191,7 @@ class DetallesCuenta {
   Future<BoolResult> delete([bool hardDelete = false]) async {
     print(
         'SQFENTITIY: delete DetallesCuenta invoked (idDetalleCuenta=$idDetalleCuenta)');
-    if (!_softDeleteActivated || hardDelete || isDeleted) {
+    if (!_softDeleteActivated || hardDelete) {
       return _mnDetallesCuenta.delete(QueryParams(
           whereString: 'idDetalleCuenta=?', whereArguments: [idDetalleCuenta]));
     } else {
@@ -4314,21 +4200,6 @@ class DetallesCuenta {
               whereString: 'idDetalleCuenta=?',
               whereArguments: [idDetalleCuenta]),
           {'isDeleted': 1});
-    }
-  }
-
-  /// Recover DetallesCuenta>
-
-  /// <returns>BoolResult res.success=Recovered, not res.success=Can not recovered
-  Future<BoolResult> recover([bool recoverChilds = true]) async {
-    print(
-        'SQFENTITIY: recover DetallesCuenta invoked (idDetalleCuenta=$idDetalleCuenta)');
-    {
-      return _mnDetallesCuenta.updateBatch(
-          QueryParams(
-              whereString: 'idDetalleCuenta=?',
-              whereArguments: [idDetalleCuenta]),
-          {'isDeleted': 0});
     }
   }
 
@@ -4352,7 +4223,6 @@ class DetallesCuenta {
     monto = monto ?? 0;
     cuentasIdCuenta = cuentasIdCuenta ?? 0;
     categoriasIdCategoria = categoriasIdCategoria ?? 0;
-    isDeleted = isDeleted ?? false;
   }
   // END METHODS
   // CUSTOM CODES
@@ -4783,11 +4653,6 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
         _categoriasIdCategoria, 'categoriasIdCategoria', DbType.integer);
   }
 
-  DetallesCuentaField _isDeleted;
-  DetallesCuentaField get isDeleted {
-    return _isDeleted = setField(_isDeleted, 'isDeleted', DbType.bool);
-  }
-
   bool _getIsDeleted;
 
   void _buildParameters() {
@@ -4879,13 +4744,6 @@ class DetallesCuentaFilterBuilder extends SearchCriteria {
       r = await _obj._mnDetallesCuenta.delete(qparams);
     }
     return r;
-  }
-
-  Future<BoolResult> recover() async {
-    _getIsDeleted = true;
-    _buildParameters();
-    print('SQFENTITIY: recover DetallesCuenta bulk invoked');
-    return _obj._mnDetallesCuenta.updateBatch(qparams, {'isDeleted': 0});
   }
 
   /// using:
@@ -5188,12 +5046,6 @@ class DetallesCuentaFields {
         SqlSyntax.setField(
             _fCategoriasIdCategoria, 'categoriasIdCategoria', DbType.integer);
   }
-
-  static TableField _fIsDeleted;
-  static TableField get isDeleted {
-    return _fIsDeleted = _fIsDeleted ??
-        SqlSyntax.setField(_fIsDeleted, 'isDeleted', DbType.integer);
-  }
 }
 // endregion DetallesCuentaFields
 
@@ -5211,6 +5063,1106 @@ class DetallesCuentaManager extends SqfEntityProvider {
 }
 
 //endregion DetallesCuentaManager
+// region Saldo
+class Saldo {
+  Saldo({this.idSaldo, this.fecha, this.monto, this.cuentasIdCuenta}) {
+    _setDefaultValues();
+  }
+  Saldo.withFields(this.fecha, this.monto, this.cuentasIdCuenta) {
+    _setDefaultValues();
+  }
+  Saldo.withId(idSaldo, this.fecha, this.monto, this.cuentasIdCuenta) {
+    _setDefaultValues();
+  }
+  Saldo.fromMap(Map<String, dynamic> o) {
+    _setDefaultValues();
+    idSaldo = int.tryParse(o['idSaldo'].toString());
+    if (o['fecha'] != null) fecha = o['fecha'] as String;
+    if (o['monto'] != null) monto = double.tryParse(o['monto'].toString());
+    cuentasIdCuenta = int.tryParse(o['cuentasIdCuenta'].toString());
+
+    // RELATIONSHIPS FromMAP
+    plCuenta = o['cuenta'] != null
+        ? Cuenta.fromMap(o['cuenta'] as Map<String, dynamic>)
+        : null;
+    // END RELATIONSHIPS FromMAP
+  }
+  // FIELDS (Saldo)
+  int idSaldo;
+  String fecha;
+  double monto;
+  int cuentasIdCuenta;
+
+  BoolResult saveResult;
+  // end FIELDS (Saldo)
+
+// RELATIONSHIPS (Saldo)
+  /// to load parent of items to this field, use preload parameter ex: toList(preload:true) or toSingle(preload:true) or getById(preload:true)
+  /// You can also specify this object into certain preload fields. Ex: toList(preload:true, preloadFields:['plCuenta', 'plField2'..]) or so on..
+  Cuenta plCuenta;
+
+  /// get Cuenta By CuentasIdCuenta
+  Future<Cuenta> getCuenta({bool loadParents = false}) async {
+    final _obj =
+        await Cuenta().getById(cuentasIdCuenta, loadParents: loadParents);
+    return _obj;
+  }
+  // END RELATIONSHIPS (Saldo)
+
+  static const bool _softDeleteActivated = false;
+  SaldoManager __mnSaldo;
+
+  SaldoManager get _mnSaldo {
+    return __mnSaldo = __mnSaldo ?? SaldoManager();
+  }
+
+  // METHODS
+  Map<String, dynamic> toMap(
+      {bool forQuery = false, bool forJson = false, bool forView = false}) {
+    final map = <String, dynamic>{};
+    if (idSaldo != null) {
+      map['idSaldo'] = idSaldo;
+    }
+    if (fecha != null) {
+      map['fecha'] = fecha;
+    }
+
+    if (monto != null) {
+      map['monto'] = monto;
+    }
+
+    if (cuentasIdCuenta != null) {
+      map['cuentasIdCuenta'] = forView ? plCuenta.descripcion : cuentasIdCuenta;
+    }
+
+    return map;
+  }
+
+  Future<Map<String, dynamic>> toMapWithChilds(
+      [bool forQuery = false,
+      bool forJson = false,
+      bool forView = false]) async {
+    final map = <String, dynamic>{};
+    if (idSaldo != null) {
+      map['idSaldo'] = idSaldo;
+    }
+    if (fecha != null) {
+      map['fecha'] = fecha;
+    }
+
+    if (monto != null) {
+      map['monto'] = monto;
+    }
+
+    if (cuentasIdCuenta != null) {
+      map['cuentasIdCuenta'] = forView ? plCuenta.descripcion : cuentasIdCuenta;
+    }
+
+    return map;
+  }
+
+  /// This method returns Json String
+  String toJson() {
+    return json.encode(toMap(forJson: true));
+  }
+
+  /// This method returns Json String
+  Future<String> toJsonWithChilds() async {
+    return json.encode(await toMapWithChilds(false, true));
+  }
+
+  List<dynamic> toArgs() {
+    return [fecha, monto, cuentasIdCuenta];
+  }
+
+  List<dynamic> toArgsWithIds() {
+    return [idSaldo, fecha, monto, cuentasIdCuenta];
+  }
+
+  static Future<List<Saldo>> fromWebUrl(String url) async {
+    try {
+      final response = await http.get(url);
+      return await fromJson(response.body);
+    } catch (e) {
+      print('SQFENTITY ERROR Saldo.fromWebUrl: ErrorMessage: ${e.toString()}');
+      return null;
+    }
+  }
+
+  static Future<List<Saldo>> fromJson(String jsonBody) async {
+    final Iterable list = await json.decode(jsonBody) as Iterable;
+    var objList = <Saldo>[];
+    try {
+      objList = list
+          .map((saldo) => Saldo.fromMap(saldo as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      print('SQFENTITY ERROR Saldo.fromJson: ErrorMessage: ${e.toString()}');
+    }
+    return objList;
+  }
+
+  /*
+    /// REMOVED AFTER v1.2.1+14 
+    static Future<List<Saldo>> fromObjectList(Future<List<dynamic>> o) async {
+      final data = await o;
+      return await Saldo.fromMapList(data);
+    } 
+    */
+
+  static Future<List<Saldo>> fromMapList(List<dynamic> data,
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
+    final List<Saldo> objList = <Saldo>[];
+    for (final map in data) {
+      final obj = Saldo.fromMap(map as Map<String, dynamic>);
+
+      // RELATIONSHIPS PRELOAD
+      if (preload || loadParents) {
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('cuentas.plCuenta') &&
+            (preloadFields == null ||
+                loadParents ||
+                preloadFields.contains('plCuenta'))) {
+          loadedFields.add('cuentas.plCuenta');
+          obj.plCuenta =
+              obj.plCuenta ?? await obj.getCuenta(loadParents: loadParents);
+        }
+      } // END RELATIONSHIPS PRELOAD
+
+      objList.add(obj);
+    }
+    return objList;
+  }
+
+  /// returns Saldo by ID if exist, otherwise returns null
+  ///
+  /// Primary Keys: int idSaldo
+  ///
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
+  ///
+  /// ex: getById(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: getById(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
+  ///
+  /// <returns>returns Saldo if exist, otherwise returns null
+  Future<Saldo> getById(int idSaldo,
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
+    if (idSaldo == null) {
+      return null;
+    }
+    Saldo obj;
+    final data = await _mnSaldo.getById([idSaldo]);
+    if (data.length != 0) {
+      obj = Saldo.fromMap(data[0] as Map<String, dynamic>);
+
+      // RELATIONSHIPS PRELOAD
+      if (preload || loadParents) {
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('cuentas.plCuenta') &&
+            (preloadFields == null ||
+                loadParents ||
+                preloadFields.contains('plCuenta'))) {
+          loadedFields.add('cuentas.plCuenta');
+          obj.plCuenta =
+              obj.plCuenta ?? await obj.getCuenta(loadParents: loadParents);
+        }
+      } // END RELATIONSHIPS PRELOAD
+
+    } else {
+      obj = null;
+    }
+    return obj;
+  }
+
+  /// Saves the (Saldo) object. If the idSaldo field is null, saves as a new record and returns new idSaldo, if idSaldo is not null then updates record
+
+  /// <returns>Returns idSaldo
+  Future<int> save() async {
+    if (idSaldo == null || idSaldo == 0) {
+      idSaldo = await _mnSaldo.insert(this);
+    } else {
+      // idSaldo= await _upsert(); // removed in sqfentity_gen 1.3.0+6
+      await _mnSaldo.update(this);
+    }
+
+    return idSaldo;
+  }
+
+  /// saveAs Saldo. Returns a new Primary Key value of Saldo
+
+  /// <returns>Returns a new Primary Key value of Saldo
+  Future<int> saveAs() async {
+    idSaldo = null;
+
+    return save();
+  }
+
+  /// saveAll method saves the sent List<Saldo> as a bulk in one transaction
+  ///
+  /// Returns a <List<BoolResult>>
+  Future<List<dynamic>> saveAll(List<Saldo> saldos) async {
+    // final results = _mnSaldo.saveAll('INSERT OR REPLACE INTO saldos (idSaldo,fecha, monto, cuentasIdCuenta)  VALUES (?,?,?,?)',saldos);
+    // return results; removed in sqfentity_gen 1.3.0+6
+    DbComplex().batchStart();
+    for (final obj in saldos) {
+      await obj.save();
+    }
+    return DbComplex().batchCommit();
+  }
+
+  /// Updates if the record exists, otherwise adds a new row
+
+  /// <returns>Returns idSaldo
+  Future<int> upsert() async {
+    try {
+      if (await _mnSaldo.rawInsert(
+              'INSERT OR REPLACE INTO saldos (idSaldo,fecha, monto, cuentasIdCuenta)  VALUES (?,?,?,?)',
+              [idSaldo, fecha, monto, cuentasIdCuenta]) ==
+          1) {
+        saveResult = BoolResult(
+            success: true,
+            successMessage: 'Saldo idSaldo=$idSaldo updated successfully');
+      } else {
+        saveResult = BoolResult(
+            success: false,
+            errorMessage: 'Saldo idSaldo=$idSaldo did not update');
+      }
+      return idSaldo;
+    } catch (e) {
+      saveResult = BoolResult(
+          success: false,
+          errorMessage: 'Saldo Save failed. Error: ${e.toString()}');
+      return 0;
+    }
+  }
+
+  /// inserts or replaces the sent List<<Saldo>> as a bulk in one transaction.
+  ///
+  /// upsertAll() method is faster then saveAll() method. upsertAll() should be used when you are sure that the primary key is greater than zero
+  ///
+  /// Returns a BoolCommitResult
+  Future<BoolCommitResult> upsertAll(List<Saldo> saldos) async {
+    final results = await _mnSaldo.rawInsertAll(
+        'INSERT OR REPLACE INTO saldos (idSaldo,fecha, monto, cuentasIdCuenta)  VALUES (?,?,?,?)',
+        saldos);
+    return results;
+  }
+
+  /// Deletes Saldo
+
+  /// <returns>BoolResult res.success=Deleted, not res.success=Can not deleted
+  Future<BoolResult> delete([bool hardDelete = false]) async {
+    print('SQFENTITIY: delete Saldo invoked (idSaldo=$idSaldo)');
+    if (!_softDeleteActivated || hardDelete) {
+      return _mnSaldo.delete(
+          QueryParams(whereString: 'idSaldo=?', whereArguments: [idSaldo]));
+    } else {
+      return _mnSaldo.updateBatch(
+          QueryParams(whereString: 'idSaldo=?', whereArguments: [idSaldo]),
+          {'isDeleted': 1});
+    }
+  }
+
+  //private SaldoFilterBuilder _Select;
+  SaldoFilterBuilder select({List<String> columnsToSelect, bool getIsDeleted}) {
+    return SaldoFilterBuilder(this)
+      .._getIsDeleted = getIsDeleted == true
+      ..qparams.selectColumns = columnsToSelect;
+  }
+
+  SaldoFilterBuilder distinct(
+      {List<String> columnsToSelect, bool getIsDeleted}) {
+    return SaldoFilterBuilder(this)
+      .._getIsDeleted = getIsDeleted == true
+      ..qparams.selectColumns = columnsToSelect
+      ..qparams.distinct = true;
+  }
+
+  void _setDefaultValues() {
+    monto = monto ?? 0;
+    cuentasIdCuenta = cuentasIdCuenta ?? 0;
+  }
+  // END METHODS
+  // CUSTOM CODES
+  /*
+      you must define customCode property of your SqfEntityTable constant for ex:
+      const tablePerson = SqfEntityTable(
+      tableName: 'person',
+      primaryKeyName: 'id',
+      primaryKeyType: PrimaryKeyType.integer_auto_incremental,
+      fields: [
+        SqfEntityField('firstName', DbType.text),
+        SqfEntityField('lastName', DbType.text),
+      ],
+      customCode: '''
+       String fullName()
+       { 
+         return '$firstName $lastName';
+       }
+      ''');
+     */
+  // END CUSTOM CODES
+}
+// endregion saldo
+
+// region SaldoField
+class SaldoField extends SearchCriteria {
+  SaldoField(this.saldoFB) {
+    param = DbParameter();
+  }
+  DbParameter param;
+  String _waitingNot = '';
+  SaldoFilterBuilder saldoFB;
+
+  SaldoField get not {
+    _waitingNot = ' NOT ';
+    return this;
+  }
+
+  SaldoFilterBuilder equals(dynamic pValue) {
+    param.expression = '=';
+    saldoFB._addedBlocks = _waitingNot == ''
+        ? setCriteria(pValue, saldoFB.parameters, param, SqlSyntax.EQuals,
+            saldoFB._addedBlocks)
+        : setCriteria(pValue, saldoFB.parameters, param, SqlSyntax.NotEQuals,
+            saldoFB._addedBlocks);
+    _waitingNot = '';
+    saldoFB._addedBlocks.needEndBlock[saldoFB._blockIndex] =
+        saldoFB._addedBlocks.retVal;
+    return saldoFB;
+  }
+
+  SaldoFilterBuilder equalsOrNull(dynamic pValue) {
+    param.expression = '=';
+    saldoFB._addedBlocks = _waitingNot == ''
+        ? setCriteria(pValue, saldoFB.parameters, param, SqlSyntax.EQualsOrNull,
+            saldoFB._addedBlocks)
+        : setCriteria(pValue, saldoFB.parameters, param,
+            SqlSyntax.NotEQualsOrNull, saldoFB._addedBlocks);
+    _waitingNot = '';
+    saldoFB._addedBlocks.needEndBlock[saldoFB._blockIndex] =
+        saldoFB._addedBlocks.retVal;
+    return saldoFB;
+  }
+
+  SaldoFilterBuilder isNull() {
+    saldoFB._addedBlocks = setCriteria(
+        0,
+        saldoFB.parameters,
+        param,
+        SqlSyntax.IsNULL.replaceAll(SqlSyntax.notKeyword, _waitingNot),
+        saldoFB._addedBlocks);
+    _waitingNot = '';
+    saldoFB._addedBlocks.needEndBlock[saldoFB._blockIndex] =
+        saldoFB._addedBlocks.retVal;
+    return saldoFB;
+  }
+
+  SaldoFilterBuilder contains(dynamic pValue) {
+    if (pValue != null) {
+      saldoFB._addedBlocks = setCriteria(
+          '%${pValue.toString()}%',
+          saldoFB.parameters,
+          param,
+          SqlSyntax.Contains.replaceAll(SqlSyntax.notKeyword, _waitingNot),
+          saldoFB._addedBlocks);
+      _waitingNot = '';
+      saldoFB._addedBlocks.needEndBlock[saldoFB._blockIndex] =
+          saldoFB._addedBlocks.retVal;
+    }
+    return saldoFB;
+  }
+
+  SaldoFilterBuilder startsWith(dynamic pValue) {
+    if (pValue != null) {
+      saldoFB._addedBlocks = setCriteria(
+          '${pValue.toString()}%',
+          saldoFB.parameters,
+          param,
+          SqlSyntax.Contains.replaceAll(SqlSyntax.notKeyword, _waitingNot),
+          saldoFB._addedBlocks);
+      _waitingNot = '';
+      saldoFB._addedBlocks.needEndBlock[saldoFB._blockIndex] =
+          saldoFB._addedBlocks.retVal;
+      saldoFB._addedBlocks.needEndBlock[saldoFB._blockIndex] =
+          saldoFB._addedBlocks.retVal;
+    }
+    return saldoFB;
+  }
+
+  SaldoFilterBuilder endsWith(dynamic pValue) {
+    if (pValue != null) {
+      saldoFB._addedBlocks = setCriteria(
+          '%${pValue.toString()}',
+          saldoFB.parameters,
+          param,
+          SqlSyntax.Contains.replaceAll(SqlSyntax.notKeyword, _waitingNot),
+          saldoFB._addedBlocks);
+      _waitingNot = '';
+      saldoFB._addedBlocks.needEndBlock[saldoFB._blockIndex] =
+          saldoFB._addedBlocks.retVal;
+    }
+    return saldoFB;
+  }
+
+  SaldoFilterBuilder between(dynamic pFirst, dynamic pLast) {
+    if (pFirst != null && pLast != null) {
+      saldoFB._addedBlocks = setCriteria(
+          pFirst,
+          saldoFB.parameters,
+          param,
+          SqlSyntax.Between.replaceAll(SqlSyntax.notKeyword, _waitingNot),
+          saldoFB._addedBlocks,
+          pLast);
+    } else if (pFirst != null) {
+      if (_waitingNot != '') {
+        saldoFB._addedBlocks = setCriteria(pFirst, saldoFB.parameters, param,
+            SqlSyntax.LessThan, saldoFB._addedBlocks);
+      } else {
+        saldoFB._addedBlocks = setCriteria(pFirst, saldoFB.parameters, param,
+            SqlSyntax.GreaterThanOrEquals, saldoFB._addedBlocks);
+      }
+    } else if (pLast != null) {
+      if (_waitingNot != '') {
+        saldoFB._addedBlocks = setCriteria(pLast, saldoFB.parameters, param,
+            SqlSyntax.GreaterThan, saldoFB._addedBlocks);
+      } else {
+        saldoFB._addedBlocks = setCriteria(pLast, saldoFB.parameters, param,
+            SqlSyntax.LessThanOrEquals, saldoFB._addedBlocks);
+      }
+    }
+    _waitingNot = '';
+    saldoFB._addedBlocks.needEndBlock[saldoFB._blockIndex] =
+        saldoFB._addedBlocks.retVal;
+    return saldoFB;
+  }
+
+  SaldoFilterBuilder greaterThan(dynamic pValue) {
+    param.expression = '>';
+    saldoFB._addedBlocks = _waitingNot == ''
+        ? setCriteria(pValue, saldoFB.parameters, param, SqlSyntax.GreaterThan,
+            saldoFB._addedBlocks)
+        : setCriteria(pValue, saldoFB.parameters, param,
+            SqlSyntax.LessThanOrEquals, saldoFB._addedBlocks);
+    _waitingNot = '';
+    saldoFB._addedBlocks.needEndBlock[saldoFB._blockIndex] =
+        saldoFB._addedBlocks.retVal;
+    return saldoFB;
+  }
+
+  SaldoFilterBuilder lessThan(dynamic pValue) {
+    param.expression = '<';
+    saldoFB._addedBlocks = _waitingNot == ''
+        ? setCriteria(pValue, saldoFB.parameters, param, SqlSyntax.LessThan,
+            saldoFB._addedBlocks)
+        : setCriteria(pValue, saldoFB.parameters, param,
+            SqlSyntax.GreaterThanOrEquals, saldoFB._addedBlocks);
+    _waitingNot = '';
+    saldoFB._addedBlocks.needEndBlock[saldoFB._blockIndex] =
+        saldoFB._addedBlocks.retVal;
+    return saldoFB;
+  }
+
+  SaldoFilterBuilder greaterThanOrEquals(dynamic pValue) {
+    param.expression = '>=';
+    saldoFB._addedBlocks = _waitingNot == ''
+        ? setCriteria(pValue, saldoFB.parameters, param,
+            SqlSyntax.GreaterThanOrEquals, saldoFB._addedBlocks)
+        : setCriteria(pValue, saldoFB.parameters, param, SqlSyntax.LessThan,
+            saldoFB._addedBlocks);
+    _waitingNot = '';
+    saldoFB._addedBlocks.needEndBlock[saldoFB._blockIndex] =
+        saldoFB._addedBlocks.retVal;
+    return saldoFB;
+  }
+
+  SaldoFilterBuilder lessThanOrEquals(dynamic pValue) {
+    param.expression = '<=';
+    saldoFB._addedBlocks = _waitingNot == ''
+        ? setCriteria(pValue, saldoFB.parameters, param,
+            SqlSyntax.LessThanOrEquals, saldoFB._addedBlocks)
+        : setCriteria(pValue, saldoFB.parameters, param, SqlSyntax.GreaterThan,
+            saldoFB._addedBlocks);
+    _waitingNot = '';
+    saldoFB._addedBlocks.needEndBlock[saldoFB._blockIndex] =
+        saldoFB._addedBlocks.retVal;
+    return saldoFB;
+  }
+
+  SaldoFilterBuilder inValues(dynamic pValue) {
+    saldoFB._addedBlocks = setCriteria(
+        pValue,
+        saldoFB.parameters,
+        param,
+        SqlSyntax.IN.replaceAll(SqlSyntax.notKeyword, _waitingNot),
+        saldoFB._addedBlocks);
+    _waitingNot = '';
+    saldoFB._addedBlocks.needEndBlock[saldoFB._blockIndex] =
+        saldoFB._addedBlocks.retVal;
+    return saldoFB;
+  }
+}
+// endregion SaldoField
+
+// region SaldoFilterBuilder
+class SaldoFilterBuilder extends SearchCriteria {
+  SaldoFilterBuilder(Saldo obj) {
+    whereString = '';
+    qparams = QueryParams();
+    parameters = <DbParameter>[];
+    orderByList = <String>[];
+    groupByList = <String>[];
+    _addedBlocks = AddedBlocks(<bool>[], <bool>[]);
+    _addedBlocks.needEndBlock.add(false);
+    _addedBlocks.waitingStartBlock.add(false);
+    _pagesize = 0;
+    _page = 0;
+    _obj = obj;
+  }
+  AddedBlocks _addedBlocks;
+  int _blockIndex = 0;
+  List<DbParameter> parameters;
+  List<String> orderByList;
+  Saldo _obj;
+  QueryParams qparams;
+  int _pagesize;
+  int _page;
+
+  /// put the sql keyword 'AND'
+  SaldoFilterBuilder get and {
+    if (parameters.isNotEmpty) {
+      parameters[parameters.length - 1].wOperator = ' AND ';
+    }
+    return this;
+  }
+
+  /// put the sql keyword 'OR'
+  SaldoFilterBuilder get or {
+    if (parameters.isNotEmpty) {
+      parameters[parameters.length - 1].wOperator = ' OR ';
+    }
+    return this;
+  }
+
+  /// open parentheses
+  SaldoFilterBuilder get startBlock {
+    _addedBlocks.waitingStartBlock.add(true);
+    _addedBlocks.needEndBlock.add(false);
+    _blockIndex++;
+    if (_blockIndex > 1) _addedBlocks.needEndBlock[_blockIndex - 1] = true;
+    return this;
+  }
+
+  /// String whereCriteria, write raw query without 'where' keyword. Like this: 'field1 like 'test%' and field2 = 3'
+  SaldoFilterBuilder where(String whereCriteria, {dynamic parameterValue}) {
+    if (whereCriteria != null && whereCriteria != '') {
+      final DbParameter param = DbParameter();
+      _addedBlocks = setCriteria(parameterValue ?? 0, parameters, param,
+          '($whereCriteria)', _addedBlocks);
+      _addedBlocks.needEndBlock[_blockIndex] = _addedBlocks.retVal;
+    }
+    return this;
+  }
+
+  /// page = page number,
+  ///
+  /// pagesize = row(s) per page
+  SaldoFilterBuilder page(int page, int pagesize) {
+    if (page > 0) _page = page;
+    if (pagesize > 0) _pagesize = pagesize;
+    return this;
+  }
+
+  /// int count = LIMIT
+  SaldoFilterBuilder top(int count) {
+    if (count > 0) {
+      _pagesize = count;
+    }
+    return this;
+  }
+
+  /// close parentheses
+  SaldoFilterBuilder get endBlock {
+    if (_addedBlocks.needEndBlock[_blockIndex]) {
+      parameters[parameters.length - 1].whereString += ' ) ';
+    }
+    _addedBlocks.needEndBlock.removeAt(_blockIndex);
+    _addedBlocks.waitingStartBlock.removeAt(_blockIndex);
+    _blockIndex--;
+    return this;
+  }
+
+  /// argFields might be String or List<String>.
+  ///
+  /// Example 1: argFields='name, date'
+  ///
+  /// Example 2: argFields = ['name', 'date']
+  SaldoFilterBuilder orderBy(dynamic argFields) {
+    if (argFields != null) {
+      if (argFields is String) {
+        orderByList.add(argFields);
+      } else {
+        for (String s in argFields as List<String>) {
+          if (s != null && s != '') orderByList.add(' $s ');
+        }
+      }
+    }
+    return this;
+  }
+
+  /// argFields might be String or List<String>.
+  ///
+  /// Example 1: argFields='field1, field2'
+  ///
+  /// Example 2: argFields = ['field1', 'field2']
+  SaldoFilterBuilder orderByDesc(dynamic argFields) {
+    if (argFields != null) {
+      if (argFields is String) {
+        orderByList.add('$argFields desc ');
+      } else {
+        for (String s in argFields as List<String>) {
+          if (s != null && s != '') orderByList.add(' $s desc ');
+        }
+      }
+    }
+    return this;
+  }
+
+  /// argFields might be String or List<String>.
+  ///
+  /// Example 1: argFields='field1, field2'
+  ///
+  /// Example 2: argFields = ['field1', 'field2']
+  SaldoFilterBuilder groupBy(dynamic argFields) {
+    if (argFields != null) {
+      if (argFields is String) {
+        groupByList.add(' $argFields ');
+      } else {
+        for (String s in argFields as List<String>) {
+          if (s != null && s != '') groupByList.add(' $s ');
+        }
+      }
+    }
+    return this;
+  }
+
+  SaldoField setField(SaldoField field, String colName, DbType dbtype) {
+    return SaldoField(this)
+      ..param = DbParameter(
+          dbType: dbtype,
+          columnName: colName,
+          wStartBlock: _addedBlocks.waitingStartBlock[_blockIndex]);
+  }
+
+  SaldoField _idSaldo;
+  SaldoField get idSaldo {
+    return _idSaldo = setField(_idSaldo, 'idSaldo', DbType.integer);
+  }
+
+  SaldoField _fecha;
+  SaldoField get fecha {
+    return _fecha = setField(_fecha, 'fecha', DbType.text);
+  }
+
+  SaldoField _monto;
+  SaldoField get monto {
+    return _monto = setField(_monto, 'monto', DbType.real);
+  }
+
+  SaldoField _cuentasIdCuenta;
+  SaldoField get cuentasIdCuenta {
+    return _cuentasIdCuenta =
+        setField(_cuentasIdCuenta, 'cuentasIdCuenta', DbType.integer);
+  }
+
+  bool _getIsDeleted;
+
+  void _buildParameters() {
+    if (_page > 0 && _pagesize > 0) {
+      qparams
+        ..limit = _pagesize
+        ..offset = (_page - 1) * _pagesize;
+    } else {
+      qparams
+        ..limit = _pagesize
+        ..offset = _page;
+    }
+    for (DbParameter param in parameters) {
+      if (param.columnName != null) {
+        if (param.value is List) {
+          param.value = param.value
+              .toString()
+              .replaceAll('[', '')
+              .replaceAll(']', '')
+              .toString();
+          whereString += param.whereString
+              .replaceAll('{field}', param.columnName)
+              .replaceAll('?', param.value.toString());
+          param.value = null;
+        } else {
+          whereString +=
+              param.whereString.replaceAll('{field}', param.columnName);
+        }
+        if (!param.whereString.contains('?')) {
+        } else {
+          switch (param.dbType) {
+            case DbType.bool:
+              param.value =
+                  param.value == null ? null : param.value == true ? 1 : 0;
+              param.value2 =
+                  param.value2 == null ? null : param.value2 == true ? 1 : 0;
+              break;
+            case DbType.date:
+            case DbType.datetime:
+            case DbType.datetimeUtc:
+              param.value = param.value == null
+                  ? null
+                  : (param.value as DateTime).millisecondsSinceEpoch;
+              param.value2 = param.value2 == null
+                  ? null
+                  : (param.value2 as DateTime).millisecondsSinceEpoch;
+              break;
+            default:
+          }
+        }
+      } else {
+        whereString += param.whereString;
+      }
+      if (param.value != null) {
+        whereArguments.add(param.value);
+      }
+      if (param.value2 != null) {
+        whereArguments.add(param.value2);
+      }
+    }
+    if (Saldo._softDeleteActivated) {
+      if (whereString != '') {
+        whereString =
+            '${!_getIsDeleted ? 'ifnull(isDeleted,0)=0 AND' : ''} ($whereString)';
+      } else if (!_getIsDeleted) {
+        whereString = 'ifnull(isDeleted,0)=0';
+      }
+    }
+
+    if (whereString != '') {
+      qparams.whereString = whereString;
+    }
+    qparams
+      ..whereArguments = whereArguments
+      ..groupBy = groupByList.join(',')
+      ..orderBy = orderByList.join(',');
+  }
+
+  /// Deletes List<Saldo> bulk by query
+  ///
+  /// <returns>BoolResult res.success=Deleted, not res.success=Can not deleted
+  Future<BoolResult> delete([bool hardDelete = false]) async {
+    _buildParameters();
+    var r = BoolResult();
+
+    if (Saldo._softDeleteActivated && !hardDelete) {
+      r = await _obj._mnSaldo.updateBatch(qparams, {'isDeleted': 1});
+    } else {
+      r = await _obj._mnSaldo.delete(qparams);
+    }
+    return r;
+  }
+
+  /// using:
+  ///
+  /// update({'fieldName': Value})
+  ///
+  /// fieldName must be String. Value is dynamic, it can be any of the (int, bool, String.. )
+  Future<BoolResult> update(Map<String, dynamic> values) {
+    _buildParameters();
+    if (qparams.limit > 0 || qparams.offset > 0) {
+      qparams.whereString =
+          'idSaldo IN (SELECT idSaldo from saldos ${qparams.whereString.isNotEmpty ? 'WHERE ${qparams.whereString}' : ''}${qparams.limit > 0 ? ' LIMIT ${qparams.limit}' : ''}${qparams.offset > 0 ? ' OFFSET ${qparams.offset}' : ''})';
+    }
+    return _obj._mnSaldo.updateBatch(qparams, values);
+  }
+
+  /// This method always returns Saldo Obj if exist, otherwise returns null
+  ///
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
+  ///
+  /// ex: toSingle(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: toSingle(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
+  ///
+  /// <returns>List<Saldo>
+  Future<Saldo> toSingle(
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
+    _pagesize = 1;
+    _buildParameters();
+    final objFuture = _obj._mnSaldo.toList(qparams);
+    final data = await objFuture;
+    Saldo obj;
+    if (data.isNotEmpty) {
+      obj = Saldo.fromMap(data[0] as Map<String, dynamic>);
+
+      // RELATIONSHIPS PRELOAD
+      if (preload || loadParents) {
+        loadedFields = loadedFields ?? [];
+        if (!loadedFields.contains('cuentas.plCuenta') &&
+            (preloadFields == null ||
+                loadParents ||
+                preloadFields.contains('plCuenta'))) {
+          loadedFields.add('cuentas.plCuenta');
+          obj.plCuenta =
+              obj.plCuenta ?? await obj.getCuenta(loadParents: loadParents);
+        }
+      } // END RELATIONSHIPS PRELOAD
+
+    } else {
+      obj = null;
+    }
+    return obj;
+  }
+
+  /// This method returns int.
+  ///
+  /// <returns>int
+  Future<int> toCount([VoidCallback Function(int c) saldoCount]) async {
+    _buildParameters();
+    qparams.selectColumns = ['COUNT(1) AS CNT'];
+    final saldosFuture = await _obj._mnSaldo.toList(qparams);
+    final int count = saldosFuture[0]['CNT'] as int;
+    if (saldoCount != null) {
+      saldoCount(count);
+    }
+    return count;
+  }
+
+  /// This method returns List<Saldo>.
+  ///
+  /// bool preload: if true, loads all related child objects (Set preload to true if you want to load all fields related to child or parent)
+  ///
+  /// ex: toList(preload:true) -> Loads all related objects
+  ///
+  /// List<String> preloadFields: specify the fields you want to preload (preload parameter's value should also be "true")
+  ///
+  /// ex: toList(preload:true, preloadFields:['plField1','plField2'... etc])  -> Loads only certain fields what you specified
+  ///
+  /// bool loadParents: if true, loads all parent objects until the object has no parent
+
+  ///
+  /// <returns>List<Saldo>
+  Future<List<Saldo>> toList(
+      {bool preload = false,
+      List<String> preloadFields,
+      bool loadParents = false,
+      List<String> loadedFields}) async {
+    final data = await toMapList();
+    final List<Saldo> saldosData = await Saldo.fromMapList(data,
+        preload: preload,
+        preloadFields: preloadFields,
+        loadParents: loadParents,
+        loadedFields: loadedFields);
+    return saldosData;
+  }
+
+  /// This method returns Json String
+  Future<String> toJson() async {
+    final list = <dynamic>[];
+    final data = await toList();
+    for (var o in data) {
+      list.add(o.toMap(forJson: true));
+    }
+    return json.encode(list);
+  }
+
+  /// This method returns Json String.
+  Future<String> toJsonWithChilds() async {
+    final list = <dynamic>[];
+    final data = await toList();
+    for (var o in data) {
+      list.add(await o.toMapWithChilds(false, true));
+    }
+    return json.encode(list);
+  }
+
+  /// This method returns List<dynamic>.
+  ///
+  /// <returns>List<dynamic>
+  Future<List<dynamic>> toMapList() async {
+    _buildParameters();
+    return await _obj._mnSaldo.toList(qparams);
+  }
+
+  /// Returns List<DropdownMenuItem<Saldo>>
+  Future<List<DropdownMenuItem<Saldo>>> toDropDownMenu(String displayTextColumn,
+      [VoidCallback Function(List<DropdownMenuItem<Saldo>> o)
+          dropDownMenu]) async {
+    _buildParameters();
+    final saldosFuture = _obj._mnSaldo.toList(qparams);
+
+    final data = await saldosFuture;
+    final int count = data.length;
+    final List<DropdownMenuItem<Saldo>> items = []..add(DropdownMenuItem(
+        value: Saldo(),
+        child: Text('Select Saldo'),
+      ));
+    for (int i = 0; i < count; i++) {
+      items.add(
+        DropdownMenuItem(
+          value: Saldo.fromMap(data[i] as Map<String, dynamic>),
+          child: Text(data[i][displayTextColumn].toString()),
+        ),
+      );
+    }
+    if (dropDownMenu != null) {
+      dropDownMenu(items);
+    }
+    return items;
+  }
+
+  /// Returns List<DropdownMenuItem<int>>
+  Future<List<DropdownMenuItem<int>>> toDropDownMenuInt(
+      String displayTextColumn,
+      [VoidCallback Function(List<DropdownMenuItem<int>> o)
+          dropDownMenu]) async {
+    _buildParameters();
+    qparams.selectColumns = ['idSaldo', displayTextColumn];
+    final saldosFuture = _obj._mnSaldo.toList(qparams);
+
+    final data = await saldosFuture;
+    final int count = data.length;
+    final List<DropdownMenuItem<int>> items = []..add(DropdownMenuItem(
+        value: 0,
+        child: Text('Select Saldo'),
+      ));
+    for (int i = 0; i < count; i++) {
+      items.add(
+        DropdownMenuItem(
+          value: data[i]['idSaldo'] as int,
+          child: Text(data[i][displayTextColumn].toString()),
+        ),
+      );
+    }
+    if (dropDownMenu != null) {
+      dropDownMenu(items);
+    }
+    return items;
+  }
+
+  /// This method returns Primary Key List<int>.
+  /// <returns>List<int>
+  Future<List<int>> toListPrimaryKey([bool buildParameters = true]) async {
+    if (buildParameters) _buildParameters();
+    final List<int> idSaldoData = <int>[];
+    qparams.selectColumns = ['idSaldo'];
+    final idSaldoFuture = await _obj._mnSaldo.toList(qparams);
+
+    final int count = idSaldoFuture.length;
+    for (int i = 0; i < count; i++) {
+      idSaldoData.add(idSaldoFuture[i]['idSaldo'] as int);
+    }
+    return idSaldoData;
+  }
+
+  /// Returns List<dynamic> for selected columns. Use this method for 'groupBy' with min,max,avg..
+  ///
+  /// Sample usage: (see EXAMPLE 4.2 at https://github.com/hhtokpinar/sqfEntity#group-by)
+  Future<List<dynamic>> toListObject() async {
+    _buildParameters();
+
+    final objectFuture = _obj._mnSaldo.toList(qparams);
+
+    final List<dynamic> objectsData = <dynamic>[];
+    final data = await objectFuture;
+    final int count = data.length;
+    for (int i = 0; i < count; i++) {
+      objectsData.add(data[i]);
+    }
+    return objectsData;
+  }
+
+  /// Returns List<String> for selected first column
+  ///
+  /// Sample usage: await Saldo.select(columnsToSelect: ['columnName']).toListString()
+  Future<List<String>> toListString(
+      [VoidCallback Function(List<String> o) listString]) async {
+    _buildParameters();
+
+    final objectFuture = _obj._mnSaldo.toList(qparams);
+
+    final List<String> objectsData = <String>[];
+    final data = await objectFuture;
+    final int count = data.length;
+    for (int i = 0; i < count; i++) {
+      objectsData.add(data[i][qparams.selectColumns[0]].toString());
+    }
+    if (listString != null) {
+      listString(objectsData);
+    }
+    return objectsData;
+  }
+}
+// endregion SaldoFilterBuilder
+
+// region SaldoFields
+class SaldoFields {
+  static TableField _fIdSaldo;
+  static TableField get idSaldo {
+    return _fIdSaldo =
+        _fIdSaldo ?? SqlSyntax.setField(_fIdSaldo, 'idsaldo', DbType.integer);
+  }
+
+  static TableField _fFecha;
+  static TableField get fecha {
+    return _fFecha =
+        _fFecha ?? SqlSyntax.setField(_fFecha, 'fecha', DbType.text);
+  }
+
+  static TableField _fMonto;
+  static TableField get monto {
+    return _fMonto =
+        _fMonto ?? SqlSyntax.setField(_fMonto, 'monto', DbType.real);
+  }
+
+  static TableField _fCuentasIdCuenta;
+  static TableField get cuentasIdCuenta {
+    return _fCuentasIdCuenta = _fCuentasIdCuenta ??
+        SqlSyntax.setField(
+            _fCuentasIdCuenta, 'cuentasIdCuenta', DbType.integer);
+  }
+}
+// endregion SaldoFields
+
+//region SaldoManager
+class SaldoManager extends SqfEntityProvider {
+  SaldoManager()
+      : super(DbComplex(),
+            tableName: _tableName,
+            primaryKeyList: _primaryKeyList,
+            whereStr: _whereStr);
+  static String _tableName = 'saldos';
+  //static String _colId = 'idSaldo';
+  static List<String> _primaryKeyList = ['idSaldo'];
+  static String _whereStr = 'idSaldo=?';
+}
+
+//endregion SaldoManager
 // region Meta
 class Meta {
   Meta(
@@ -5221,31 +6173,15 @@ class Meta {
       this.montoInicial,
       this.montoFinal,
       this.color,
-      this.icono,
-      this.isDeleted}) {
+      this.icono}) {
     _setDefaultValues();
   }
-  Meta.withFields(
-      this.descripcion,
-      this.fechaInicio,
-      this.fechaFin,
-      this.montoInicial,
-      this.montoFinal,
-      this.color,
-      this.icono,
-      this.isDeleted) {
+  Meta.withFields(this.descripcion, this.fechaInicio, this.fechaFin,
+      this.montoInicial, this.montoFinal, this.color, this.icono) {
     _setDefaultValues();
   }
-  Meta.withId(
-      idMeta,
-      this.descripcion,
-      this.fechaInicio,
-      this.fechaFin,
-      this.montoInicial,
-      this.montoFinal,
-      this.color,
-      this.icono,
-      this.isDeleted) {
+  Meta.withId(idMeta, this.descripcion, this.fechaInicio, this.fechaFin,
+      this.montoInicial, this.montoFinal, this.color, this.icono) {
     _setDefaultValues();
   }
   Meta.fromMap(Map<String, dynamic> o) {
@@ -5260,9 +6196,6 @@ class Meta {
       montoFinal = double.tryParse(o['montoFinal'].toString());
     if (o['color'] != null) color = o['color'] as String;
     if (o['icono'] != null) icono = o['icono'] as String;
-    isDeleted = o['isDeleted'] != null
-        ? o['isDeleted'] == 1 || o['isDeleted'] == true
-        : null;
   }
   // FIELDS (Meta)
   int idMeta;
@@ -5273,7 +6206,6 @@ class Meta {
   double montoFinal;
   String color;
   String icono;
-  bool isDeleted;
 
   BoolResult saveResult;
   // end FIELDS (Meta)
@@ -5295,7 +6227,7 @@ class Meta {
 
 // END COLLECTIONS & VIRTUALS (Meta)
 
-  static const bool _softDeleteActivated = true;
+  static const bool _softDeleteActivated = false;
   MetaManager __mnMeta;
 
   MetaManager get _mnMeta {
@@ -5337,10 +6269,6 @@ class Meta {
       map['icono'] = icono;
     }
 
-    if (isDeleted != null) {
-      map['isDeleted'] = forQuery ? (isDeleted ? 1 : 0) : isDeleted;
-    }
-
     return map;
   }
 
@@ -5380,10 +6308,6 @@ class Meta {
       map['icono'] = icono;
     }
 
-    if (isDeleted != null) {
-      map['isDeleted'] = forQuery ? (isDeleted ? 1 : 0) : isDeleted;
-    }
-
 // COLLECTIONS (Meta)
     if (!forQuery) {
       map['DetallesMetas'] = await getDetallesMetas().toMapList();
@@ -5411,8 +6335,7 @@ class Meta {
       montoInicial,
       montoFinal,
       color,
-      icono,
-      isDeleted
+      icono
     ];
   }
 
@@ -5425,8 +6348,7 @@ class Meta {
       montoInicial,
       montoFinal,
       color,
-      icono,
-      isDeleted
+      icono
     ];
   }
 
@@ -5569,7 +6491,7 @@ class Meta {
   ///
   /// Returns a <List<BoolResult>>
   Future<List<dynamic>> saveAll(List<Meta> metas) async {
-    // final results = _mnMeta.saveAll('INSERT OR REPLACE INTO metas (idMeta,descripcion, fechaInicio, fechaFin, montoInicial, montoFinal, color, icono,isDeleted)  VALUES (?,?,?,?,?,?,?,?,?)',metas);
+    // final results = _mnMeta.saveAll('INSERT OR REPLACE INTO metas (idMeta,descripcion, fechaInicio, fechaFin, montoInicial, montoFinal, color, icono)  VALUES (?,?,?,?,?,?,?,?)',metas);
     // return results; removed in sqfentity_gen 1.3.0+6
     DbComplex().batchStart();
     for (final obj in metas) {
@@ -5584,7 +6506,7 @@ class Meta {
   Future<int> upsert() async {
     try {
       if (await _mnMeta.rawInsert(
-              'INSERT OR REPLACE INTO metas (idMeta,descripcion, fechaInicio, fechaFin, montoInicial, montoFinal, color, icono,isDeleted)  VALUES (?,?,?,?,?,?,?,?,?)',
+              'INSERT OR REPLACE INTO metas (idMeta,descripcion, fechaInicio, fechaFin, montoInicial, montoFinal, color, icono)  VALUES (?,?,?,?,?,?,?,?)',
               [
                 idMeta,
                 descripcion,
@@ -5593,8 +6515,7 @@ class Meta {
                 montoInicial,
                 montoFinal,
                 color,
-                icono,
-                isDeleted
+                icono
               ]) ==
           1) {
         saveResult = BoolResult(
@@ -5620,7 +6541,7 @@ class Meta {
   /// Returns a BoolCommitResult
   Future<BoolCommitResult> upsertAll(List<Meta> metas) async {
     final results = await _mnMeta.rawInsertAll(
-        'INSERT OR REPLACE INTO metas (idMeta,descripcion, fechaInicio, fechaFin, montoInicial, montoFinal, color, icono,isDeleted)  VALUES (?,?,?,?,?,?,?,?,?)',
+        'INSERT OR REPLACE INTO metas (idMeta,descripcion, fechaInicio, fechaFin, montoInicial, montoFinal, color, icono)  VALUES (?,?,?,?,?,?,?,?)',
         metas);
     return results;
   }
@@ -5641,39 +6562,13 @@ class Meta {
     if (!result.success) {
       return result;
     }
-    if (!_softDeleteActivated || hardDelete || isDeleted) {
+    if (!_softDeleteActivated || hardDelete) {
       return _mnMeta.delete(
           QueryParams(whereString: 'idMeta=?', whereArguments: [idMeta]));
     } else {
       return _mnMeta.updateBatch(
           QueryParams(whereString: 'idMeta=?', whereArguments: [idMeta]),
           {'isDeleted': 1});
-    }
-  }
-
-  /// Recover Meta>
-
-  /// <returns>BoolResult res.success=Recovered, not res.success=Can not recovered
-  Future<BoolResult> recover([bool recoverChilds = true]) async {
-    print('SQFENTITIY: recover Meta invoked (idMeta=$idMeta)');
-    var result = BoolResult();
-    if (recoverChilds) {
-      result = await DetallesMeta()
-          .select(getIsDeleted: true)
-          .isDeleted
-          .equals(true)
-          .and
-          .metasIdMeta
-          .equals(idMeta)
-          .update({'isDeleted': 0});
-    }
-    if (!result.success && recoverChilds) {
-      return result;
-    }
-    {
-      return _mnMeta.updateBatch(
-          QueryParams(whereString: 'idMeta=?', whereArguments: [idMeta]),
-          {'isDeleted': 0});
     }
   }
 
@@ -5695,7 +6590,6 @@ class Meta {
   void _setDefaultValues() {
     montoInicial = montoInicial ?? 0;
     montoFinal = montoFinal ?? 0;
-    isDeleted = isDeleted ?? false;
   }
   // END METHODS
   // CUSTOM CODES
@@ -6109,11 +7003,6 @@ class MetaFilterBuilder extends SearchCriteria {
     return _icono = setField(_icono, 'icono', DbType.text);
   }
 
-  MetaField _isDeleted;
-  MetaField get isDeleted {
-    return _isDeleted = setField(_isDeleted, 'isDeleted', DbType.bool);
-  }
-
   bool _getIsDeleted;
 
   void _buildParameters() {
@@ -6198,12 +7087,6 @@ class MetaFilterBuilder extends SearchCriteria {
   Future<BoolResult> delete([bool hardDelete = false]) async {
     _buildParameters();
     var r = BoolResult();
-    final detallesMetasBymetasIdMetaidList = await toListPrimaryKey(false);
-    await DetallesMeta()
-        .select()
-        .metasIdMeta
-        .inValues(detallesMetasBymetasIdMetaidList)
-        .delete(hardDelete);
 
     if (Meta._softDeleteActivated && !hardDelete) {
       r = await _obj._mnMeta.updateBatch(qparams, {'isDeleted': 1});
@@ -6211,22 +7094,6 @@ class MetaFilterBuilder extends SearchCriteria {
       r = await _obj._mnMeta.delete(qparams);
     }
     return r;
-  }
-
-  Future<BoolResult> recover() async {
-    _getIsDeleted = true;
-    _buildParameters();
-    print('SQFENTITIY: recover Meta bulk invoked');
-    final detallesMetasBymetasIdMetaidList = await toListPrimaryKey(false);
-    await DetallesMeta()
-        .select(getIsDeleted: true)
-        .isDeleted
-        .equals(true)
-        .and
-        .metasIdMeta
-        .inValues(detallesMetasBymetasIdMetaidList)
-        .update({'isDeleted': 0});
-    return _obj._mnMeta.updateBatch(qparams, {'isDeleted': 0});
   }
 
   /// using:
@@ -6522,12 +7389,6 @@ class MetaFields {
     return _fIcono =
         _fIcono ?? SqlSyntax.setField(_fIcono, 'icono', DbType.text);
   }
-
-  static TableField _fIsDeleted;
-  static TableField get isDeleted {
-    return _fIsDeleted = _fIsDeleted ??
-        SqlSyntax.setField(_fIsDeleted, 'isDeleted', DbType.integer);
-  }
 }
 // endregion MetaFields
 
@@ -6547,20 +7408,13 @@ class MetaManager extends SqfEntityProvider {
 //endregion MetaManager
 // region DetallesMeta
 class DetallesMeta {
-  DetallesMeta(
-      {this.idDetalleMeta,
-      this.fecha,
-      this.monto,
-      this.metasIdMeta,
-      this.isDeleted}) {
+  DetallesMeta({this.idDetalleMeta, this.fecha, this.monto, this.metasIdMeta}) {
     _setDefaultValues();
   }
-  DetallesMeta.withFields(
-      this.fecha, this.monto, this.metasIdMeta, this.isDeleted) {
+  DetallesMeta.withFields(this.fecha, this.monto, this.metasIdMeta) {
     _setDefaultValues();
   }
-  DetallesMeta.withId(
-      idDetalleMeta, this.fecha, this.monto, this.metasIdMeta, this.isDeleted) {
+  DetallesMeta.withId(idDetalleMeta, this.fecha, this.monto, this.metasIdMeta) {
     _setDefaultValues();
   }
   DetallesMeta.fromMap(Map<String, dynamic> o) {
@@ -6569,10 +7423,6 @@ class DetallesMeta {
     if (o['fecha'] != null) fecha = o['fecha'] as String;
     if (o['monto'] != null) monto = double.tryParse(o['monto'].toString());
     metasIdMeta = int.tryParse(o['metasIdMeta'].toString());
-
-    isDeleted = o['isDeleted'] != null
-        ? o['isDeleted'] == 1 || o['isDeleted'] == true
-        : null;
 
     // RELATIONSHIPS FromMAP
     plMeta = o['meta'] != null
@@ -6585,7 +7435,6 @@ class DetallesMeta {
   String fecha;
   double monto;
   int metasIdMeta;
-  bool isDeleted;
 
   BoolResult saveResult;
   // end FIELDS (DetallesMeta)
@@ -6602,7 +7451,7 @@ class DetallesMeta {
   }
   // END RELATIONSHIPS (DetallesMeta)
 
-  static const bool _softDeleteActivated = true;
+  static const bool _softDeleteActivated = false;
   DetallesMetaManager __mnDetallesMeta;
 
   DetallesMetaManager get _mnDetallesMeta {
@@ -6628,10 +7477,6 @@ class DetallesMeta {
       map['metasIdMeta'] = forView ? plMeta.descripcion : metasIdMeta;
     }
 
-    if (isDeleted != null) {
-      map['isDeleted'] = forQuery ? (isDeleted ? 1 : 0) : isDeleted;
-    }
-
     return map;
   }
 
@@ -6655,10 +7500,6 @@ class DetallesMeta {
       map['metasIdMeta'] = forView ? plMeta.descripcion : metasIdMeta;
     }
 
-    if (isDeleted != null) {
-      map['isDeleted'] = forQuery ? (isDeleted ? 1 : 0) : isDeleted;
-    }
-
     return map;
   }
 
@@ -6673,11 +7514,11 @@ class DetallesMeta {
   }
 
   List<dynamic> toArgs() {
-    return [fecha, monto, metasIdMeta, isDeleted];
+    return [fecha, monto, metasIdMeta];
   }
 
   List<dynamic> toArgsWithIds() {
-    return [idDetalleMeta, fecha, monto, metasIdMeta, isDeleted];
+    return [idDetalleMeta, fecha, monto, metasIdMeta];
   }
 
   static Future<List<DetallesMeta>> fromWebUrl(String url) async {
@@ -6816,7 +7657,7 @@ class DetallesMeta {
   ///
   /// Returns a <List<BoolResult>>
   Future<List<dynamic>> saveAll(List<DetallesMeta> detallesmetas) async {
-    // final results = _mnDetallesMeta.saveAll('INSERT OR REPLACE INTO detallesMetas (idDetalleMeta,fecha, monto, metasIdMeta,isDeleted)  VALUES (?,?,?,?,?)',detallesmetas);
+    // final results = _mnDetallesMeta.saveAll('INSERT OR REPLACE INTO detallesMetas (idDetalleMeta,fecha, monto, metasIdMeta)  VALUES (?,?,?,?)',detallesmetas);
     // return results; removed in sqfentity_gen 1.3.0+6
     DbComplex().batchStart();
     for (final obj in detallesmetas) {
@@ -6831,8 +7672,8 @@ class DetallesMeta {
   Future<int> upsert() async {
     try {
       if (await _mnDetallesMeta.rawInsert(
-              'INSERT OR REPLACE INTO detallesMetas (idDetalleMeta,fecha, monto, metasIdMeta,isDeleted)  VALUES (?,?,?,?,?)',
-              [idDetalleMeta, fecha, monto, metasIdMeta, isDeleted]) ==
+              'INSERT OR REPLACE INTO detallesMetas (idDetalleMeta,fecha, monto, metasIdMeta)  VALUES (?,?,?,?)',
+              [idDetalleMeta, fecha, monto, metasIdMeta]) ==
           1) {
         saveResult = BoolResult(
             success: true,
@@ -6860,7 +7701,7 @@ class DetallesMeta {
   /// Returns a BoolCommitResult
   Future<BoolCommitResult> upsertAll(List<DetallesMeta> detallesmetas) async {
     final results = await _mnDetallesMeta.rawInsertAll(
-        'INSERT OR REPLACE INTO detallesMetas (idDetalleMeta,fecha, monto, metasIdMeta,isDeleted)  VALUES (?,?,?,?,?)',
+        'INSERT OR REPLACE INTO detallesMetas (idDetalleMeta,fecha, monto, metasIdMeta)  VALUES (?,?,?,?)',
         detallesmetas);
     return results;
   }
@@ -6871,7 +7712,7 @@ class DetallesMeta {
   Future<BoolResult> delete([bool hardDelete = false]) async {
     print(
         'SQFENTITIY: delete DetallesMeta invoked (idDetalleMeta=$idDetalleMeta)');
-    if (!_softDeleteActivated || hardDelete || isDeleted) {
+    if (!_softDeleteActivated || hardDelete) {
       return _mnDetallesMeta.delete(QueryParams(
           whereString: 'idDetalleMeta=?', whereArguments: [idDetalleMeta]));
     } else {
@@ -6879,20 +7720,6 @@ class DetallesMeta {
           QueryParams(
               whereString: 'idDetalleMeta=?', whereArguments: [idDetalleMeta]),
           {'isDeleted': 1});
-    }
-  }
-
-  /// Recover DetallesMeta>
-
-  /// <returns>BoolResult res.success=Recovered, not res.success=Can not recovered
-  Future<BoolResult> recover([bool recoverChilds = true]) async {
-    print(
-        'SQFENTITIY: recover DetallesMeta invoked (idDetalleMeta=$idDetalleMeta)');
-    {
-      return _mnDetallesMeta.updateBatch(
-          QueryParams(
-              whereString: 'idDetalleMeta=?', whereArguments: [idDetalleMeta]),
-          {'isDeleted': 0});
     }
   }
 
@@ -6915,7 +7742,6 @@ class DetallesMeta {
   void _setDefaultValues() {
     monto = monto ?? 0;
     metasIdMeta = metasIdMeta ?? 0;
-    isDeleted = isDeleted ?? false;
   }
   // END METHODS
   // CUSTOM CODES
@@ -7328,11 +8154,6 @@ class DetallesMetaFilterBuilder extends SearchCriteria {
     return _metasIdMeta = setField(_metasIdMeta, 'metasIdMeta', DbType.integer);
   }
 
-  DetallesMetaField _isDeleted;
-  DetallesMetaField get isDeleted {
-    return _isDeleted = setField(_isDeleted, 'isDeleted', DbType.bool);
-  }
-
   bool _getIsDeleted;
 
   void _buildParameters() {
@@ -7424,13 +8245,6 @@ class DetallesMetaFilterBuilder extends SearchCriteria {
       r = await _obj._mnDetallesMeta.delete(qparams);
     }
     return r;
-  }
-
-  Future<BoolResult> recover() async {
-    _getIsDeleted = true;
-    _buildParameters();
-    print('SQFENTITIY: recover DetallesMeta bulk invoked');
-    return _obj._mnDetallesMeta.updateBatch(qparams, {'isDeleted': 0});
   }
 
   /// using:
@@ -7700,12 +8514,6 @@ class DetallesMetaFields {
   static TableField get metasIdMeta {
     return _fMetasIdMeta = _fMetasIdMeta ??
         SqlSyntax.setField(_fMetasIdMeta, 'metasIdMeta', DbType.integer);
-  }
-
-  static TableField _fIsDeleted;
-  static TableField get isDeleted {
-    return _fIsDeleted = _fIsDeleted ??
-        SqlSyntax.setField(_fIsDeleted, 'isDeleted', DbType.integer);
   }
 }
 // endregion DetallesMetaFields
