@@ -16,11 +16,6 @@ la herencia múltiple.
   int _cuentaId = 0;
   int _grupoId = 0;
 
-  int _ingresoTotal = 0;
-  int _egresoTotal = 0;
-  int _saldo = 0;
-  
-
   String get usuario => _usuario;
   set usuario(String value) {
     _usuario = value;
@@ -45,45 +40,11 @@ la herencia múltiple.
     notifyListeners(); //notificamos a los widgets que esten escuchando el stream.
   }
 
-  int get ingresoTotal => _ingresoTotal;
-  set ingresoTotal(int value) {
-    _ingresoTotal = value;
-    notifyListeners(); //notificamos a los widgets que esten escuchando el stream.
-  }
-
-  int get egresoTotal => _egresoTotal;
-  set egresoTotal(int value) {
-    _egresoTotal = value;
-    notifyListeners(); //notificamos a los widgets que esten escuchando el stream.
-  }
-
-  int get saldo => _saldo;
-  set saldo(int value) {
-    _saldo = value;
-    notifyListeners(); //notificamos a los widgets que esten escuchando el stream.
-  }
-
-
   void initialState(String usuario, int usuarioId, int cuentaId,
       int ingresoTotal, int egresoTotal, int saldo) {
     _usuario = usuario;
     _usuarioId = usuarioId;
     _cuentaId = cuentaId;
-    _ingresoTotal = ingresoTotal;
-    _egresoTotal = egresoTotal;
-    _saldo = saldo;
-    notifyListeners();
-  }
-
-  void updateIngreso(int ingresoTotal, int saldo) {
-    _ingresoTotal = ingresoTotal;
-    _saldo = saldo;
-    notifyListeners();
-  }
-
-  void updateEgreso(int egresoTotal, int saldo) {
-    _egresoTotal = egresoTotal;
-    _saldo = saldo;
     notifyListeners();
   }
 }
