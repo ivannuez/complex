@@ -6,3 +6,5 @@ export 'package:complex/pages/TransactionList.dart';
 export 'package:complex/pages/Settings.dart';
 export 'package:complex/pages/Category.dart';
 export 'package:complex/pages/Statistics.dart';
+export 'package:complex/pages/MetasForm.dart';
+export 'package:complex/pages/MetasView.dart';

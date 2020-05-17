@@ -43,9 +43,10 @@ class PopapDate extends StatelessWidget {
             ),
             Text(
               toBeginningOfSentenceCase(DateFormat("MMMM", "es").format(date)),
-              style: Theme.of(context).textTheme.title.copyWith(
-                  fontWeight: FontWeight.normal,
-                  color: Theme.of(context).primaryTextTheme.body1.color),
+              style: Theme.of(context)
+                  .textTheme
+                  .headline6
+                  .copyWith(fontWeight: FontWeight.normal, color: Colors.white),
             ),
           ],
         ),

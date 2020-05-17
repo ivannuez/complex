@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:complex/constant/Widget.dart';
 import 'package:complex/constant/Librerias.dart';
 import 'package:complex/constant/Pages.dart';
 
@@ -21,6 +20,7 @@ class _BaseState extends State<Base> {
 
   @override
   Widget build(BuildContext context) {
+    //print('build base...');
     return Scaffold(
       backgroundColor: _appBarColor(_selectedIndex),
       body: Container(
@@ -32,8 +32,6 @@ class _BaseState extends State<Base> {
           ),
         ),
       ),
-      floatingActionButton:
-          BuildSpeedDial(dialVisible: dialVisible, context: context),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         type: BottomNavigationBarType.fixed,
@@ -42,22 +40,46 @@ class _BaseState extends State<Base> {
         unselectedItemColor: Colors.white,
         showUnselectedLabels: false,
         onTap: _onItemTapped,
-        items: const <BottomNavigationBarItem>[
+        items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(MaterialCommunityIcons.home),
-            title: Text('Inicio'),
+            title: Text(
+              'Inicio',
+              style: Theme.of(context)
+                  .textTheme
+                  .subtitle2
+                  .copyWith(color: Colors.white),
+            ),
           ),
           BottomNavigationBarItem(
             icon: Icon(MaterialCommunityIcons.format_list_bulleted_square),
-            title: Text('Transacciones'),
+            title: Text(
+              'Transacciones',
+              style: Theme.of(context)
+                  .textTheme
+                  .subtitle2
+                  .copyWith(color: Colors.white),
+            ),
           ),
           BottomNavigationBarItem(
             icon: Icon(AntDesign.barchart),
-            title: Text('Estadisticas'),
+            title: Text(
+              'Estadisticas',
+              style: Theme.of(context)
+                  .textTheme
+                  .subtitle2
+                  .copyWith(color: Colors.white),
+            ),
           ),
           BottomNavigationBarItem(
             icon: Icon(Ionicons.ios_options),
-            title: Text('Opciones'),
+            title: Text(
+              'Opciones',
+              style: Theme.of(context)
+                  .textTheme
+                  .subtitle2
+                  .copyWith(color: Colors.white),
+            ),
           ),
         ],
       ),

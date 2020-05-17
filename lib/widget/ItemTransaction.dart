@@ -1,7 +1,8 @@
 import 'package:complex/model/model.dart';
 import 'package:flutter/material.dart';
-import 'package:complex/widget/ListItem.dart';
 import 'package:complex/utils/UtilsFormat.dart';
+
+abstract class ListItem {}
 
 class ItemTransaction extends StatelessWidget implements ListItem {
   final ItemTransactionHeader header;
@@ -81,7 +82,7 @@ class ItemTransactionHeader extends StatelessWidget {
       children: <Widget>[
         Text(
           this.header,
-          style: Theme.of(context).textTheme.subtitle,
+          style: Theme.of(context).textTheme.subtitle1,
         ),
         Divider()
       ],
@@ -129,14 +130,14 @@ class ItemTransactionBody extends StatelessWidget implements ListItem {
                 children: <Widget>[
                   Text(
                     this.descripcion,
-                    style: Theme.of(context).textTheme.button.copyWith(
+                    style: Theme.of(context).textTheme.subtitle1.copyWith(
                         color: Colors.black, fontWeight: FontWeight.w400),
                   ),
                   Text(
                     this.categoria.descripcion,
                     style: Theme.of(context)
                         .textTheme
-                        .body1
+                        .subtitle1
                         .copyWith(color: Color(categoria.color)),
                   )
                 ],
@@ -149,7 +150,7 @@ class ItemTransactionBody extends StatelessWidget implements ListItem {
                   children: <Widget>[
                     Text(
                       'Gs. ' + UtilsFormat.formatNumber(this.monto),
-                      style: Theme.of(context).textTheme.body1.copyWith(
+                      style: Theme.of(context).textTheme.subtitle1.copyWith(
                           color: (tipoTransaccion == 'I'
                               ? Colors.green
                               : Colors.red)),
@@ -186,7 +187,7 @@ class ItemTransactionFooter extends StatelessWidget implements ListItem {
                   this.descripcion,
                   style: Theme.of(context)
                       .textTheme
-                      .body1
+                      .subtitle1
                       .copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
@@ -197,7 +198,7 @@ class ItemTransactionFooter extends StatelessWidget implements ListItem {
                   children: <Widget>[
                     Text(
                       'Gs. ' + UtilsFormat.formatNumber(this.monto),
-                      style: Theme.of(context).textTheme.body1.copyWith(
+                      style: Theme.of(context).textTheme.subtitle1.copyWith(
                           color: (this.saldo ? Colors.green : Colors.red),
                           fontWeight: FontWeight.w700),
                     )

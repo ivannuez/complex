@@ -7,6 +7,7 @@ import 'package:complex/constant/Librerias.dart';
 import 'package:complex/constant/Utils.dart';
 import 'package:complex/providers/provider.dart';
 import 'package:complex/model/model.dart';
+import 'package:complex/model/facade.dart';
 
 class PrincipalForm extends StatefulWidget {
   PrincipalForm({Key key, this.tipoForm, this.textForm, this.editing})
@@ -30,12 +31,14 @@ class _PrincipalFormState extends State<PrincipalForm> {
 
   bool procesando = false;
 
+  String returnPage = '';
+
   @override
   void initState() {
     super.initState();
     initializeDateFormatting('es', null);
     current.fecha = (new DateFormat("yyyy-MM-dd").format(new DateTime.now()));
-    getCategory().then((result) {
+    Facade.getCategory(widget.tipoForm).then((result) {
       setState(() {
         categorias = result;
         loading = true;
@@ -58,10 +61,6 @@ class _PrincipalFormState extends State<PrincipalForm> {
     });
   }
 
-  Future<List<Categoria>> getCategory() async {
-    return await Categoria().select().tipo.equals(widget.tipoForm).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     DetallesCuenta transaction = ModalRoute.of(context).settings.arguments;
@@ -73,10 +72,17 @@ class _PrincipalFormState extends State<PrincipalForm> {
       child: Scaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(
+            elevation: 0,
+            titleSpacing: 0,
             backgroundColor:
                 (widget.tipoForm == 'I' ? Colors.green : Colors.red),
             title: Text(
-                (!widget.editing ? 'Nuevo ' : 'Editar ') + widget.textForm),
+              (!widget.editing ? 'Nuevo ' : 'Editar ') + widget.textForm,
+              style: Theme.of(context)
+                  .textTheme
+                  .headline6
+                  .copyWith(color: Colors.white),
+            ),
             actions: <Widget>[
               (widget.editing == true
                   ? IconButton(
@@ -86,153 +92,134 @@ class _PrincipalFormState extends State<PrincipalForm> {
                     )
                   : Container()),
             ],
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(15.0),
+              child: ICircularBottom(
+                height: 15,
+                radius: 20,
+              ),
+            ),
           ),
           body: (!loading
               ? Container()
-              : Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    IHeader(
-                      text: 'Detalle',
-                      color:
-                          (widget.tipoForm == 'I' ? Colors.green : Colors.red),
-                    ),
-                    Flexible(
-                      flex: 1,
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.symmetric(horizontal: 20),
+              : SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: <Widget>[
+                      FormBuilder(
+                        key: _fbKey,
+                        autovalidate: false,
                         child: Column(
                           children: <Widget>[
-                            FormBuilder(
-                              key: _fbKey,
-                              autovalidate: false,
-                              child: Column(
-                                children: <Widget>[
-                                  FormBuilderTextField(
-                                    autofocus: (!widget.editing ? true : false),
-                                    attribute: "monto",
-                                    keyboardType: TextInputType.number,
-                                    inputFormatters: [NumericTextFormatter()],
-                                    initialValue: (current.monto > 0
-                                        ? UtilsFormat.formatNumber(
-                                            current.monto)
-                                        : ''),
-                                    decoration: const InputDecoration(
-                                      icon: Icon(
-                                        Icons.attach_money,
-                                        color: Colors.green,
-                                      ),
-                                      hintText: 'Monto',
-                                    ),
-                                    validators: [
-                                      FormBuilderValidators.required(
-                                          errorText: 'Campo requerido.'),
-                                    ],
-                                    onChanged: (value) {
-                                      if (value != '') {
-                                        current.monto = double.parse(value
-                                            .toString()
-                                            .replaceAll('.', ''));
-                                      }
-                                    },
-                                  ),
-                                  FormBuilderDateTimePicker(
-                                    attribute: "fecha",
-                                    inputType: InputType.date,
-                                    format: DateFormat("yyyy-MM-dd"),
-                                    initialValue: (current.fecha == null
-                                        ? DateTime.now()
-                                        : DateTime.parse(current.fecha)),
-                                    decoration: const InputDecoration(
-                                      icon: Icon(
-                                        Icons.calendar_today,
-                                        color: Colors.blue,
-                                      ),
-                                      hintText: 'Fecha',
-                                    ),
-                                    validators: [
-                                      FormBuilderValidators.required(
-                                          errorText: 'Campo requerido.'),
-                                    ],
-                                    onChanged: (value) {
-                                      current.fecha =
-                                          (new DateFormat("yyyy-MM-dd")
-                                              .format(value));
-                                    },
-                                  ),
-                                  FormBuilderTextField(
-                                    keyboardType: TextInputType.text,
-                                    initialValue: current.descripcion,
-                                    attribute: "descripcion",
-                                    decoration: const InputDecoration(
-                                      icon: Icon(
-                                        Icons.description,
-                                        color: Colors.lime,
-                                      ),
-                                      hintText: 'Descripcion',
-                                    ),
-                                    textCapitalization:
-                                        TextCapitalization.sentences,
-                                    validators: [
-                                      FormBuilderValidators.required(
-                                          errorText: 'Campo requerido.'),
-                                    ],
-                                    onChanged: (value) {
-                                      current.descripcion = value;
-                                    },
-                                  ),
-                                  FormBuilderDropdown(
-                                    initialValue: selectedCategory,
-                                    attribute: "categoria",
-                                    decoration: const InputDecoration(
-                                      icon: Icon(
-                                        Icons.category,
-                                        color: Colors.orange,
-                                      ),
-                                    ),
-                                    hint: (selectedCategory == null
-                                        ? Text('Categoria')
-                                        : IListTile(
-                                            color: MaterialColor(
-                                                selectedCategory.color, null),
-                                            descripcion:
-                                                selectedCategory.descripcion,
-                                          )),
-                                    validators: (!widget.editing
-                                        ? [
-                                            FormBuilderValidators.required(
-                                                errorText: 'Campo requerido.')
-                                          ]
-                                        : []),
-                                    onChanged: (catSelect) {
-                                      selectedCategory = catSelect;
-                                    },
-                                    items: categorias == null
-                                        ? []
-                                        : categorias
-                                            .map(
-                                              (categoryItem) =>
-                                                  DropdownMenuItem<Categoria>(
-                                                value: categoryItem,
-                                                child: IListTile(
-                                                  color: MaterialColor(
-                                                      categoryItem.color, null),
-                                                  descripcion:
-                                                      categoryItem.descripcion,
-                                                ),
-                                              ),
-                                            )
-                                            .toList(),
-                                  ),
-                                ],
+                            FormBuilderTextField(
+                              autofocus: (!widget.editing ? true : false),
+                              attribute: "monto",
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [NumericTextFormatter()],
+                              initialValue: (current.monto > 0
+                                  ? UtilsFormat.formatNumber(current.monto)
+                                  : ''),
+                              decoration: const InputDecoration(
+                                labelText: "Monto",
+                                icon: Icon(Icons.attach_money),
+                                //hintText: 'Monto',
                               ),
+                              validators: [
+                                FormBuilderValidators.required(
+                                    errorText: 'Campo requerido.')
+                              ],
+                              onChanged: (value) {
+                                if (value != '') {
+                                  current.monto = double.parse(
+                                      value.toString().replaceAll('.', ''));
+                                }
+                              },
+                            ),
+                            FormBuilderDateTimePicker(
+                              attribute: "fecha",
+                              inputType: InputType.date,
+                              format: DateFormat("yyyy-MM-dd"),
+                              initialValue: (current.fecha == null
+                                  ? DateTime.now()
+                                  : DateTime.parse(current.fecha)),
+                              decoration: const InputDecoration(
+                                icon: Icon(Icons.calendar_today),
+                                labelText: "Fecha",
+                                //hintText: 'Fecha',
+                              ),
+                              validators: [
+                                FormBuilderValidators.required(
+                                    errorText: 'Campo requerido.'),
+                              ],
+                              onChanged: (value) {
+                                current.fecha = (new DateFormat("yyyy-MM-dd")
+                                    .format(value));
+                              },
+                            ),
+                            FormBuilderTextField(
+                              keyboardType: TextInputType.text,
+                              initialValue: current.descripcion,
+                              attribute: "descripcion",
+                              decoration: const InputDecoration(
+                                icon: Icon(Icons.description),
+                                labelText: "Descripcion",
+                                //hintText: 'Descripcion',
+                              ),
+                              textCapitalization: TextCapitalization.sentences,
+                              validators: [
+                                FormBuilderValidators.required(
+                                    errorText: 'Campo requerido.'),
+                              ],
+                              onChanged: (value) {
+                                current.descripcion = value;
+                              },
+                            ),
+                            FormBuilderDropdown(
+                              isDense: false,
+                              initialValue: selectedCategory,
+                              attribute: "categoria",
+                              decoration: const InputDecoration(
+                                icon: Icon(Icons.category),
+                                labelText: "Categoria",
+                              ),
+                              hint: (selectedCategory == null
+                                  ? Text('Seleccione un Categoria')
+                                  : IListTile(
+                                      color: MaterialColor(
+                                          selectedCategory.color, null),
+                                      descripcion: selectedCategory.descripcion,
+                                    )),
+                              validators: (!widget.editing
+                                  ? [
+                                      FormBuilderValidators.required(
+                                          errorText: 'Campo requerido.')
+                                    ]
+                                  : []),
+                              onChanged: (catSelect) {
+                                selectedCategory = catSelect;
+                              },
+                              items: categorias == null
+                                  ? []
+                                  : categorias
+                                      .map(
+                                        (categoryItem) =>
+                                            DropdownMenuItem<Categoria>(
+                                          value: categoryItem,
+                                          child: IListTile(
+                                            color: MaterialColor(
+                                                categoryItem.color, null),
+                                            descripcion:
+                                                categoryItem.descripcion,
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
                             ),
                           ],
                         ),
                       ),
-                    )
-                  ],
+                    ],
+                  ),
                 )),
           floatingActionButton: FloatingActionButton(
             elevation: 5.0,
@@ -341,7 +328,7 @@ class _PrincipalFormState extends State<PrincipalForm> {
                   .select()
                   .fecha
                   .startsWith(current.fecha.substring(0, 7))
-                  .orderBy("fecha")
+                  .orderByDesc("idSaldo")
                   .toSingle();
               if (action == 'sumar') {
                 nuevoSaldo = ultimoSaldo.monto + montoNuevo;
@@ -362,7 +349,13 @@ class _PrincipalFormState extends State<PrincipalForm> {
           } else {
             print('no guardado');
           }
-          Navigator.pop(context);
+          Navigator.of(context).pop(true);
+          /*
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/base',
+            (Route<dynamic> route) => false,
+          );
+          */
         },
       ).show();
     } else {
@@ -427,7 +420,7 @@ class _PrincipalFormState extends State<PrincipalForm> {
         } else {
           print('no se pudo borrar : ${result.errorMessage}');
         }
-        Navigator.pop(context);
+        Navigator.of(context).pop(true);
       },
     ).show();
   }
