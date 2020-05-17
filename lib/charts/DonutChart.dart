@@ -1,9 +1,9 @@
+import 'package:charts_flutter/flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:complex/widget/NotData.dart';
 import 'package:complex/constant/Librerias.dart';
 import 'package:complex/constant/Utils.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
-
 
 class DonutChart extends StatelessWidget {
   final Future<List<Map<String, dynamic>>> list;
@@ -47,23 +47,30 @@ class DonutChart extends StatelessWidget {
                 index++;
                 porcentaje = porcentaje + d["porcentaje"].toInt();
                 restoMonto = restoMonto + d["monto"].toInt();
-                DataChart item =
-                    new DataChart(d["descripcion"], d["porcentaje"].toInt(), d["monto"].toInt(), d["color"].toInt());
+                DataChart item = new DataChart(
+                    d["descripcion"],
+                    d["porcentaje"].toInt(),
+                    d["monto"].toInt(),
+                    d["color"].toInt());
                 data.add(item);
               }
             }
-            if(index > itemView){
-              DataChart item =
-                    new DataChart("Otros", (100 - porcentaje), (totalMonto - restoMonto ) ,Colors.grey.value);
-                data.add(item);
+            if (index > itemView) {
+              DataChart item = new DataChart("Otros", (100 - porcentaje),
+                  (totalMonto - restoMonto), Colors.grey.value);
+              data.add(item);
             }
 
             seriesList = [
               new charts.Series<DataChart, String>(
                 id: 'valor',
-                domainFn: (DataChart valor, _) => valor.description,
+                domainFn: (DataChart valor, _) => (valor.description +
+                    '  ' +
+                    'Gs. ' +
+                    UtilsFormat.formatNumber(valor.monto)),
                 measureFn: (DataChart valor, _) => valor.monto,
-                colorFn: (DataChart valor, _) => charts.Color.fromHex(code: '#'+ UtilsColor.convertColorValueToHex(valor.color)),
+                colorFn: (DataChart valor, _) => charts.Color.fromHex(
+                    code: '#' + UtilsColor.convertColorValueToHex(valor.color)),
                 data: data,
               )
             ];
@@ -75,7 +82,7 @@ class DonutChart extends StatelessWidget {
                 animate: animate,
                 layoutConfig: charts.LayoutConfig(
                   leftMarginSpec: charts.MarginSpec.fixedPixel(10),
-                  topMarginSpec: charts.MarginSpec.fixedPixel(10),
+                  topMarginSpec: charts.MarginSpec.fixedPixel(0),
                   rightMarginSpec: charts.MarginSpec.fixedPixel(0),
                   bottomMarginSpec: charts.MarginSpec.fixedPixel(10),
                 ),
@@ -84,14 +91,16 @@ class DonutChart extends StatelessWidget {
                     position: charts.BehaviorPosition.start,
                     horizontalFirst: false,
                     cellPadding: new EdgeInsets.only(right: 4.0, bottom: 4.0),
-                    showMeasures: true,
+                    showMeasures: false,
                     insideJustification: charts.InsideJustification.topStart,
                     outsideJustification: charts.OutsideJustification.middle,
-                    legendDefaultMeasure:
-                        charts.LegendDefaultMeasure.average,
-                    measureFormatter: (num value) {
-                      return value == null ? '-' : 'Gs. '+ UtilsFormat.formatNumber(value);
-                    },
+                    legendDefaultMeasure: charts.LegendDefaultMeasure.average,
+                    entryTextStyle: TextStyleSpec(fontSize: 12),
+                    /* measureFormatter: (num value) {
+                      return value == null
+                          ? '-'
+                          : 'Gs. ' + UtilsFormat.formatNumber(value);
+                    }, */
                   ),
                 ],
               ),
@@ -110,5 +119,5 @@ class DataChart {
   final int monto;
   final int color;
 
-  DataChart(this.description, this.porcentaje,this.monto, this.color);
+  DataChart(this.description, this.porcentaje, this.monto, this.color);
 }

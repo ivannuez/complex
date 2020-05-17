@@ -24,7 +24,7 @@ class NotData extends StatelessWidget {
           ),
           Text(
             "!Sin datos!",
-            style: TextStyle(fontSize: 17),
+            style: Theme.of(context).textTheme.subtitle1,
           ),
           (child == null
               ? Container()

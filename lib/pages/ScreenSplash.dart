@@ -72,59 +72,33 @@ class _ScreenSplashState extends State<ScreenSplash> {
                 color: Colors.purple.value,
                 tipo: 'E')
             .save();
-        await Categoria(
-                descripcion: 'Deudas', color: Colors.red.value, tipo: 'E')
+        await Categoria(descripcion: 'Deudas', color: 4294198070, tipo: 'E')
             .save();
-        await Categoria(
-                descripcion: 'Diezmo',
-                color: Colors.lightGreen[300].value,
-                tipo: 'E')
+        await Categoria(descripcion: 'Diezmo', color: 4290406600, tipo: 'E')
             .save();
         await Categoria(
                 descripcion: 'Ofrenda', color: Colors.yellow.value, tipo: 'E')
             .save();
-        await Categoria(
-                descripcion: 'Ahorros',
-                color: Colors.redAccent.value,
-                tipo: 'E')
+        await Categoria(descripcion: 'Ahorros', color: 4290190364, tipo: 'E')
             .save();
         await Categoria(
-                descripcion: 'Entretenimiento',
-                color: Colors.limeAccent[700].value,
-                tipo: 'E')
+                descripcion: 'Entretenimiento', color: 4278278043, tipo: 'E')
+            .save();
+        await Categoria(descripcion: 'Educación', color: 4281559326, tipo: 'E')
+            .save();
+        await Categoria(descripcion: 'Facturas', color: 4294278144, tipo: 'E')
             .save();
         await Categoria(
-                descripcion: 'Educación',
-                color: Colors.lightGreen[900].value,
-                tipo: 'E')
+                descripcion: 'Gastos Personales', color: 4294826037, tipo: 'E')
             .save();
         await Categoria(
-                descripcion: 'Facturas', color: Colors.orange.value, tipo: 'E')
+                descripcion: 'Gastos Varios', color: 4293467747, tipo: 'E')
             .save();
-        await Categoria(
-                descripcion: 'Gastos Personales',
-                color: Colors.teal[900].value,
-                tipo: 'E')
+        await Categoria(descripcion: 'Casa', color: 4294945600, tipo: 'E')
             .save();
-        await Categoria(
-                descripcion: 'Gastos Varios',
-                color: Colors.blueGrey.value,
-                tipo: 'E')
+        await Categoria(descripcion: 'Perdida', color: 4294907716, tipo: 'E')
             .save();
-        await Categoria(
-                descripcion: 'Casa',
-                color: Colors.orangeAccent.value,
-                tipo: 'E')
-            .save();
-        await Categoria(
-                descripcion: 'Perdida',
-                color: Colors.redAccent[400].value,
-                tipo: 'E')
-            .save();
-        await Categoria(
-                descripcion: 'Vestimenta',
-                color: Colors.deepPurple.value,
-                tipo: 'E')
+        await Categoria(descripcion: 'Vestimenta', color: 4284955319, tipo: 'E')
             .save();
         await Categoria(
                 descripcion: 'Salud',
@@ -153,7 +127,6 @@ class _ScreenSplashState extends State<ScreenSplash> {
     return new SplashScreen(
       seconds: 1,
       navigateAfterSeconds: Base(),
-      //navigateAfterSeconds: Desingned(),
       image: new Image.asset('assets/images/icono-app.png'),
       backgroundColor: Colors.white,
       styleTextUnderTheLoader: new TextStyle(),

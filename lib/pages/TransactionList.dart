@@ -8,7 +8,6 @@ import 'package:complex/constant/Utils.dart';
 import 'package:complex/providers/provider.dart';
 import 'package:complex/model/model.dart';
 
-
 class TransactionList extends StatefulWidget {
   TransactionList({Key key, this.tipoForm, this.textForm}) : super(key: key);
 
@@ -36,13 +35,23 @@ class _TransactionListState extends State<TransactionList> {
     }
   }
 
+  void refresh(bool refresh) async {
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
         elevation: 0,
-        title: const Text('Transacciones'),
+        title: Text(
+          'Transacciones',
+          style: Theme.of(context)
+              .textTheme
+              .headline6
+              .copyWith(color: Colors.white),
+        ),
         actions: <Widget>[
           IconButton(
             icon: const Icon(Icons.search),
@@ -56,8 +65,9 @@ class _TransactionListState extends State<TransactionList> {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60.0),
+          preferredSize: Size.fromHeight(60.0),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               PopapDate(
                 date: DateTime.parse(fecha + "-01"),
@@ -101,33 +111,6 @@ class _TransactionListState extends State<TransactionList> {
               padding: EdgeInsets.only(bottom: 0, left: 10, right: 10, top: 0),
               child: Column(
                 children: <Widget>[
-                  /*Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: <Widget>[
-                      Text(
-                        'Saldo Actual:',
-                        style: Theme.of(context).textTheme.subtitle.copyWith(
-                            color: Colors.black, fontWeight: FontWeight.w400),
-                      ),
-                      Consumer<MainProvider>(
-                        builder: (_, snapshot, __) {
-                          return Text(
-                            'Gs. ' + UtilsFormat.formatNumber(snapshot.saldo),
-                            style: Theme.of(context)
-                                .textTheme
-                                .headline
-                                .copyWith(
-                                    color: (snapshot.saldo >= 0
-                                        ? Colors.green
-                                        : Colors.red)),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),*/
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: <Widget>[
@@ -136,9 +119,12 @@ class _TransactionListState extends State<TransactionList> {
                         children: <Widget>[
                           Text(
                             'Ingreso del Mes:',
-                            style: Theme.of(context).textTheme.body2.copyWith(
-                                color: Colors.black,
-                                fontWeight: FontWeight.w400),
+                            style: Theme.of(context)
+                                .textTheme
+                                .subtitle2
+                                .copyWith(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w400),
                           ),
                           Text(
                             'Gs. ' +
@@ -146,7 +132,7 @@ class _TransactionListState extends State<TransactionList> {
                                     snapshot.data["ingresos"]),
                             style: Theme.of(context)
                                 .textTheme
-                                .subhead
+                                .subtitle2
                                 .copyWith(color: Colors.green),
                           )
                         ],
@@ -156,9 +142,12 @@ class _TransactionListState extends State<TransactionList> {
                         children: <Widget>[
                           Text(
                             'Egresos del Mes:',
-                            style: Theme.of(context).textTheme.body2.copyWith(
-                                color: Colors.black,
-                                fontWeight: FontWeight.w400),
+                            style: Theme.of(context)
+                                .textTheme
+                                .subtitle2
+                                .copyWith(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w400),
                           ),
                           Text(
                             'Gs. ' +
@@ -166,7 +155,7 @@ class _TransactionListState extends State<TransactionList> {
                                     snapshot.data["egresos"]),
                             style: Theme.of(context)
                                 .textTheme
-                                .subhead
+                                .subtitle2
                                 .copyWith(color: Colors.red),
                           )
                         ],
@@ -176,19 +165,23 @@ class _TransactionListState extends State<TransactionList> {
                         children: <Widget>[
                           Text(
                             'Balance del Mes:',
-                            style: Theme.of(context).textTheme.body2.copyWith(
-                                color: Colors.black,
-                                fontWeight: FontWeight.w400),
+                            style: Theme.of(context)
+                                .textTheme
+                                .subtitle2
+                                .copyWith(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w400),
                           ),
                           Text(
                             'Gs. ' +
                                 UtilsFormat.formatNumber(
                                     snapshot.data["balance"]),
-                            style: Theme.of(context).textTheme.subhead.copyWith(
-                                  color: (snapshot.data["balance"] >= 0
-                                      ? Colors.green
-                                      : Colors.red),
-                                ),
+                            style:
+                                Theme.of(context).textTheme.subtitle2.copyWith(
+                                      color: (snapshot.data["balance"] >= 0
+                                          ? Colors.green
+                                          : Colors.red),
+                                    ),
                           )
                         ],
                       ),
@@ -339,6 +332,6 @@ class _TransactionListState extends State<TransactionList> {
           arguments: detalle,
         ),
       ),
-    );
+    ).then((value) => value ? refresh(true) : null).catchError((error) {});
   }
 }

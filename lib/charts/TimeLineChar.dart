@@ -36,10 +36,11 @@ class TimeLineChar extends StatelessWidget {
             List<TimeSeries> dataDB = new List<TimeSeries>();
             List<TimeSeries> newDataDB = new List<TimeSeries>();
 
-            var bF;  
+            var bF;
             for (Map<String, dynamic> d in snapshot.data) {
               bF = DateTime.parse(d["fecha"]);
-              dataDB.add(new TimeSeries((new DateTime.utc(bF.year,bF.month,bF.day)),
+              dataDB.add(new TimeSeries(
+                  (new DateTime.utc(bF.year, bF.month, bF.day)),
                   UtilsFormat.doubleToInt(d["monto"])));
             }
 
@@ -48,7 +49,7 @@ class TimeLineChar extends StatelessWidget {
               mapa[temp.time] = temp;
             }
 
-            var now = new DateTime.now();
+            var now = DateTime.parse(snapshot.data[0]["fecha"]);
             var inicio = new DateTime.utc(now.year, now.month, 1);
             var fin = new DateTime.utc(
                 now.year, (now.month == 12 ? 1 : (now.month + 1)), 1);
@@ -73,8 +74,7 @@ class TimeLineChar extends StatelessWidget {
                 domainFn: (TimeSeries sales, _) => sales.time,
                 measureFn: (TimeSeries sales, _) => sales.valor,
                 measureLowerBoundFn: (TimeSeries sales, _) => sales.valor,
-                measureUpperBoundFn: (TimeSeries sales, _) =>
-                    sales.valor,
+                measureUpperBoundFn: (TimeSeries sales, _) => sales.valor,
                 data: newDataDB,
               )
             ];

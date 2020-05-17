@@ -10,4 +10,8 @@ class Querys {
   static String saldoMes(String fecha) {
     return "select cuentasIdCuenta,fecha,monto as saldo from saldos where fecha like '${fecha}%' order by idSaldo desc LIMIT 1";
   }
+
+  static String metaTotalDepositado(int idMeta) {
+    return "select sum(monto) as depositado from detallesMetas where metasIdMeta = ${idMeta}";
+  }
 }

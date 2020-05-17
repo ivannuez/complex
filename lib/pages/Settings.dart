@@ -8,7 +8,13 @@ class Settings extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Configuraciones'),
+        title: Text(
+          'Configuraciones',
+          style: Theme.of(context)
+              .textTheme
+              .headline6
+              .copyWith(color: Colors.white),
+        ),
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(15.0),
@@ -37,7 +43,7 @@ class Settings extends StatelessWidget {
                     children: <Widget>[
                       Text(
                         "Usuario",
-                        style: Theme.of(context).textTheme.subhead,
+                        style: Theme.of(context).textTheme.headline6,
                       ),
                       Divider(
                         color: Colors.grey,
@@ -55,8 +61,12 @@ class Settings extends StatelessWidget {
                                 backgroundImage: ExactAssetImage(
                                     'assets/images/icono-app.png'),
                                 backgroundColor: Colors.white,
+                                radius: 15,
                               ),
-                              title: Text("Ivan Nuñez"),
+                              title: Text(
+                                "Ivan Nuñez",
+                                style: Theme.of(context).textTheme.subtitle1,
+                              ),
                               onTap: () {},
                             ),
                             _buildDivider(),
@@ -66,7 +76,7 @@ class Settings extends StatelessWidget {
                       const SizedBox(height: 30.0),
                       Text(
                         "Opciones",
-                        style: Theme.of(context).textTheme.subhead,
+                        style: Theme.of(context).textTheme.headline6,
                       ),
                       Divider(color: Colors.grey),
                       Card(
@@ -81,14 +91,20 @@ class Settings extends StatelessWidget {
                                 AntDesign.idcard,
                                 color: Colors.orange,
                               ),
-                              title: Text("Cuentas"),
+                              title: Text(
+                                "Cuentas",
+                                style: Theme.of(context).textTheme.subtitle1,
+                              ),
                               onTap: () {},
                             ),
                             _buildDivider(),
                             ListTile(
                               leading:
                                   Icon(AntDesign.tag, color: Colors.redAccent),
-                              title: Text("Categorias"),
+                              title: Text(
+                                "Categorias",
+                                style: Theme.of(context).textTheme.subtitle1,
+                              ),
                               onTap: () {
                                 Navigator.pushNamed(
                                     context, '/settings/category');
@@ -98,14 +114,20 @@ class Settings extends StatelessWidget {
                             ListTile(
                               leading: Icon(AntDesign.clouddownload,
                                   color: Colors.cyan),
-                              title: Text("Exportar datos"),
+                              title: Text(
+                                "Exportar datos",
+                                style: Theme.of(context).textTheme.subtitle1,
+                              ),
                               onTap: () {},
                             ),
                             _buildDivider(),
                             ListTile(
                               leading:
                                   Icon(AntDesign.sync, color: Colors.green),
-                              title: Text("Sincronización"),
+                              title: Text(
+                                "Sincronización",
+                                style: Theme.of(context).textTheme.subtitle1,
+                              ),
                               onTap: () {},
                             ),
                           ],
@@ -118,7 +140,10 @@ class Settings extends StatelessWidget {
                         ),
                         child: ListTile(
                           leading: Icon(Icons.exit_to_app),
-                          title: Text("Logout"),
+                          title: Text(
+                            "Logout",
+                            style: Theme.of(context).textTheme.subtitle1,
+                          ),
                           onTap: () {},
                         ),
                       ),

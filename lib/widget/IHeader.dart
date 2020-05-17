@@ -4,7 +4,7 @@ import 'package:complex/widget/ICircularBottom.dart';
 class IHeader extends StatelessWidget {
   final String text;
   final Color color;
-  const IHeader({Key key,this.text,this.color}) : super(key: key);
+  const IHeader({Key key, this.text, this.color}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -16,19 +16,22 @@ class IHeader extends StatelessWidget {
             padding: EdgeInsets.all(16.0),
             width: double.infinity,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 Text(
                   text,
                   style: Theme.of(context)
                       .textTheme
-                      .title
+                      .subtitle1
                       .copyWith(color: Colors.white),
                 ),
               ],
             ),
           ),
-          ICircularBottom(height: 15,radius: 20,)
+          ICircularBottom(
+            height: 15,
+            radius: 20,
+          )
         ],
       ),
     );

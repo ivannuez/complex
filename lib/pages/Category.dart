@@ -59,8 +59,16 @@ class _CategoryState extends State<Category>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: new AppBar(
-        title: new Text("Categorias"),
+      appBar: AppBar(
+        elevation: 0,
+        titleSpacing: 0,
+        title: Text(
+          "Categorias",
+          style: Theme.of(context)
+              .textTheme
+              .headline6
+              .copyWith(color: Colors.white),
+        ),
         backgroundColor: indexTab == 0 ? Colors.green : Colors.red,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60.0),
@@ -93,7 +101,10 @@ class _CategoryState extends State<Category>
                           ),
                           Text(
                             'Ingresos',
-                            style: Theme.of(context).textTheme.title.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .headline6
+                                .copyWith(
                                   color:
                                       Colors.green[(indexTab == 0 ? 600 : 200)],
                                 ),
@@ -116,7 +127,10 @@ class _CategoryState extends State<Category>
                           ),
                           Text(
                             'Egresos',
-                            style: Theme.of(context).textTheme.title.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .headline6
+                                .copyWith(
                                   color:
                                       Colors.red[(indexTab == 1 ? 600 : 200)],
                                 ),
@@ -154,13 +168,19 @@ class _CategoryState extends State<Category>
                     Categoria detalle = listSnap.data["ingresos"][index];
                     return ListTile(
                       leading: CircleAvatar(
+                        radius: 20,
                         backgroundColor: Color(detalle.color),
                         child: Text(
                           detalle.descripcion[0],
-                          style: TextStyle(color: Colors.white),
+                          style: Theme.of(context).textTheme.subtitle.copyWith(
+                                color: Colors.white,
+                              ),
                         ),
                       ),
-                      title: Text(detalle.descripcion),
+                      title: Text(
+                        detalle.descripcion,
+                        style: Theme.of(context).textTheme.subtitle,
+                      ),
                       onTap: () {
                         setData(detalle);
                       },
@@ -179,10 +199,15 @@ class _CategoryState extends State<Category>
                         backgroundColor: Color(detalle.color),
                         child: Text(
                           detalle.descripcion[0],
-                          style: TextStyle(color: Colors.white),
+                          style: Theme.of(context).textTheme.subtitle.copyWith(
+                                color: Colors.white,
+                              ),
                         ),
                       ),
-                      title: Text(detalle.descripcion),
+                      title: Text(
+                        detalle.descripcion,
+                        style: Theme.of(context).textTheme.subtitle,
+                      ),
                       onTap: () {
                         setData(detalle);
                       },
@@ -208,7 +233,6 @@ class _CategoryState extends State<Category>
 
   void viewModal({bool editing}) {
     if (!editing) {
-      current = new Categoria();
       current.color = Colors.blue.value;
       current.tipo = (indexTab == 0 ? 'I' : 'E');
     }
@@ -228,13 +252,12 @@ class _CategoryState extends State<Category>
             child: Column(
               children: <Widget>[
                 Container(
-                  margin: EdgeInsets.all(5),
                   width: double.infinity,
                   child: Text(
                     'Nueva Categoria de ' +
                         (indexTab == 0 ? 'Ingreso' : 'Egreso'),
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.title.copyWith(
+                    style: Theme.of(context).textTheme.subtitle1.copyWith(
                         color: (indexTab == 0 ? Colors.green : Colors.red),
                         fontWeight: FontWeight.normal),
                   ),
@@ -243,7 +266,7 @@ class _CategoryState extends State<Category>
                     height: 20,
                     color: (indexTab == 0 ? Colors.green : Colors.red)),
                 Container(
-                  height: MediaQuery.of(context).size.height / 2.8,
+                  height: MediaQuery.of(context).size.height / 2.9,
                   padding: EdgeInsets.symmetric(horizontal: 15),
                   child: FormBuilder(
                     key: _fbKey,
@@ -255,11 +278,8 @@ class _CategoryState extends State<Category>
                           initialValue: current.descripcion,
                           attribute: "descripcion",
                           decoration: const InputDecoration(
-                            icon: Icon(
-                              Icons.description,
-                              color: Colors.lime,
-                            ),
-                            hintText: 'Descripcion',
+                            icon: Icon(Icons.description),
+                            labelText: 'Descripcion',
                           ),
                           textCapitalization: TextCapitalization.sentences,
                           validators: [
@@ -275,11 +295,8 @@ class _CategoryState extends State<Category>
                           initialValue: Color(current.color),
                           attribute: 'color',
                           decoration: const InputDecoration(
-                            icon: Icon(
-                              Icons.color_lens,
-                              color: Colors.orange,
-                            ),
-                            hintText: 'Color',
+                            icon: Icon(Icons.color_lens),
+                            labelText: 'Color',
                           ),
                           onChanged: (value) {
                             Color val = value;
@@ -296,39 +313,34 @@ class _CategoryState extends State<Category>
                     alignment: MainAxisAlignment.end,
                     children: <Widget>[
                       FlatButton(
-                        color: Colors.transparent,
                         textColor: (indexTab == 0 ? Colors.green : Colors.red),
-                        padding: EdgeInsets.only(
-                            top: 8, bottom: 8, left: 30, right: 30),
+                        child: Text('Cancelar'),
                         onPressed: () {
+                          current = new Categoria();
                           Navigator.pop(context);
                         },
-                        child: Text(
-                          "Cancelar",
-                          style: TextStyle(fontSize: 20.0),
-                        ),
                       ),
-                      RaisedButton(
-                        color: (indexTab == 0 ? Colors.green : Colors.red),
-                        textColor: Colors.white,
-                        padding: EdgeInsets.only(
-                            top: 8, bottom: 8, left: 30, right: 30),
-                        splashColor:
-                            (indexTab == 0 ? Colors.green : Colors.red),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: new BorderRadius.circular(5.0),
-                          side: BorderSide(
-                              color:
-                                  (indexTab == 0 ? Colors.green : Colors.red)),
-                        ),
-                        onPressed: () {
-                          confirmBt();
-                        },
-                        child: Text(
-                          "Aceptar",
-                          style: TextStyle(fontSize: 20.0),
-                        ),
-                      ),
+                      FlatButton(
+                          color: (indexTab == 0 ? Colors.green : Colors.red),
+                          textColor: Colors.white,
+                          padding: EdgeInsets.only(
+                              top: 8, bottom: 8, left: 30, right: 30),
+                          child: Text(
+                            'Aceptar',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          splashColor:
+                              (indexTab == 0 ? Colors.green : Colors.red),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: new BorderRadius.circular(5.0),
+                            side: BorderSide(
+                                color: (indexTab == 0
+                                    ? Colors.green
+                                    : Colors.red)),
+                          ),
+                          onPressed: () {
+                            confirmBt();
+                          }),
                     ],
                   ),
                 ),
@@ -344,6 +356,7 @@ class _CategoryState extends State<Category>
     final form = _fbKey.currentState;
     if (form.validate()) {
       current.save();
+      current = new Categoria();
       setState(() {});
       Navigator.pop(context);
     } else {

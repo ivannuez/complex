@@ -5,12 +5,12 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 class BuildSpeedDial extends StatelessWidget {
   const BuildSpeedDial({
     Key key,
-    @required this.dialVisible,
-    @required this.context,
+    this.dialVisible,
+    this.callback,
   }) : super(key: key);
 
   final bool dialVisible;
-  final BuildContext context;
+  final ValueChanged<bool> callback;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +35,9 @@ class BuildSpeedDial extends StatelessWidget {
                   editing: false,
                 ),
               ),
-            );
+            )
+                .then((value) => value ? callback(value) : null)
+                .catchError((error) {});
           },
           label: 'Egresos',
           labelStyle:
@@ -55,7 +57,9 @@ class BuildSpeedDial extends StatelessWidget {
                   editing: false,
                 ),
               ),
-            );
+            )
+                .then((value) => value ? callback(value) : null)
+                .catchError((error) {});
           },
           label: 'Ingresos',
           labelStyle:

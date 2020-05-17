@@ -1,10 +1,10 @@
+import 'package:complex/model/model.dart';
 import 'package:complex/widget/HeaderHome.dart';
+import 'package:complex/widget/HorizontalListMetas.dart';
 import 'package:flutter/material.dart';
-import 'package:complex/providers/provider.dart';
 import 'package:complex/constant/Widget.dart';
 import 'package:complex/constant/Librerias.dart';
 import 'package:complex/constant/Charts.dart';
-import 'package:complex/constant/Utils.dart';
 import 'package:complex/model/facade.dart';
 
 class Home extends StatefulWidget {
@@ -32,6 +32,10 @@ class _HomeState extends State<Home> {
     }
   }
 
+  void refresh(bool refresh) async {
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,21 +48,19 @@ class _HomeState extends State<Home> {
               children: <Widget>[
                 header(),
                 gastosPorCategoria(),
-                SizedBox(
-                  height: 20.0,
-                ),
+                SizedBox(height: 20.0),
                 frecuenciaDeGastos(),
-                SizedBox(
-                  height: 20.0,
-                ),
+                SizedBox(height: 20.0),
                 metas(),
-                SizedBox(
-                  height: 20.0,
-                ),
+                SizedBox(height: 20.0),
               ],
             ),
           ),
         ),
+      ),
+      floatingActionButton: BuildSpeedDial(
+        dialVisible: true,
+        callback: refresh,
       ),
     );
   }
@@ -67,13 +69,14 @@ class _HomeState extends State<Home> {
     return FadeInDown(
       duration: Duration(milliseconds: 400),
       child: Container(
-        height: 225,
+        height: 190,
         width: double.infinity,
         child: CustomPaint(
           painter: CurvePainter(color: Colors.blue),
           child: Container(
             margin: EdgeInsets.all(5.0),
-            padding: EdgeInsets.all(15.0),
+            padding:
+                EdgeInsets.only(left: 15.0, top: 5, right: 15.0, bottom: 5),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -81,12 +84,8 @@ class _HomeState extends State<Home> {
                   date: DateTime.parse(fecha + "-01"),
                   onPress: updateFecha,
                 ),
-                SizedBox(
-                  height: 10,
-                ),
-                HeaderHome(
-                  list: Facade.cuentaSaldo(fecha),
-                )
+                SizedBox(height: 10),
+                HeaderHome(list: Facade.cuentaSaldo(fecha))
               ],
             ),
           ),
@@ -107,20 +106,25 @@ class _HomeState extends State<Home> {
         child: Container(
           child: Container(
             width: double.infinity,
-            height: 220.0,
-            padding: EdgeInsets.only(
-                top: 10.0, left: 10.0, right: 10.0, bottom: 0.0),
+            height: 180.0,
+            padding:
+                EdgeInsets.only(top: 10.0, left: 10.0, right: 0.0, bottom: 0.0),
             child: Column(
               mainAxisSize: MainAxisSize.max,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  "Gastos por Categoria",
-                  style: Theme.of(context).textTheme.subtitle,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Text(
+                      "Gastos por Categoria",
+                      style: Theme.of(context).textTheme.subtitle2,
+                    ),
+                  ],
                 ),
                 Divider(),
                 Container(
-                  height: 150,
+                  height: 120,
                   width: double.infinity,
                   margin: EdgeInsets.only(top: 10),
                   padding: EdgeInsets.only(left: 10),
@@ -144,21 +148,26 @@ class _HomeState extends State<Home> {
           borderRadius: BorderRadius.circular(10.0),
         ),
         child: Container(
-          height: 220.0,
+          height: 180.0,
           margin: EdgeInsets.all(15.0),
           child: Column(
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                "Frecuencia de Gastos",
-                style: Theme.of(context).textTheme.subtitle,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  Text(
+                    "Frecuencia de Gastos",
+                    style: Theme.of(context).textTheme.subtitle2,
+                  ),
+                ],
               ),
               Divider(),
               Container(
-                height: 170,
+                height: 120,
                 width: double.infinity,
-                padding: EdgeInsets.only(left: 10, right: 10),
+                padding: EdgeInsets.only(left: 10, right: 0),
                 child: TimeLineChar(Facade.historialGastos(fecha)),
               ),
             ],
@@ -178,43 +187,47 @@ class _HomeState extends State<Home> {
           borderRadius: BorderRadius.circular(10.0),
         ),
         child: Container(
-          height: 220.0,
+          height: 180.0,
           margin: EdgeInsets.all(15.0),
           child: Column(
-            mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                "Metas",
-                style: Theme.of(context).textTheme.subtitle,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  Text(
+                    "Metas",
+                    style: Theme.of(context).textTheme.subtitle2,
+                  ),
+                  InkWell(
+                    child: Text(
+                      '+ Crear Meta',
+                      style: Theme.of(context)
+                          .textTheme
+                          .subtitle2
+                          .copyWith(color: Colors.blue),
+                    ),
+                    onTap: () {
+                      Navigator.pushNamed(context, '/metasForm')
+                          .then((value) => value ? refresh(value) : null)
+                          .catchError((error) {});
+                    },
+                  )
+                ],
               ),
               Divider(),
-              Expanded(
-                child: Container(
-                  height: double.infinity,
-                  width: double.infinity,
-                  child: NotData(
-                    child: FlatButton(
-                      textColor: Colors.blue,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(10))),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Icon(Icons.add),
-                          SizedBox(
-                            width: 10,
-                          ),
-                          Text('Metas'),
-                          SizedBox(
-                            width: 25,
-                          ),
-                        ],
+              Flexible(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Container(
+                      height: 140,
+                      child: HorizontalListMetas(
+                        refresh: refresh,
+                        list: Meta().select().toList(),
                       ),
-                      onPressed: () {},
                     ),
-                  ),
+                  ],
                 ),
               ),
             ],
